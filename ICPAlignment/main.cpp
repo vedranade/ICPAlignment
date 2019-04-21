@@ -15,6 +15,7 @@ int btn;
 glm::ivec2 startMouse;
 glm::ivec2 startRot, curRot;
 glm::ivec2 startTrans, curTrans;
+GLfloat zoom = 0.0f;
 
 std::vector<Vertex> model;
 
@@ -66,7 +67,7 @@ void display()
 	double w = glutGet(GLUT_WINDOW_WIDTH);
 	double h = glutGet(GLUT_WINDOW_HEIGHT);
 	double ar = w / h;
-	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, 0);
+	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, zoom);
 	gluPerspective(60, ar, 0.1, 100);
 
 	glMatrixMode(GL_MODELVIEW);
@@ -101,6 +102,14 @@ void display()
 
 	glutSwapBuffers();
 }
+
+//void mouse_wheel(int button, int dir, int x, int y)
+//{
+//	if(dir > 0)
+//		zoom += 1.0f;
+//	if(dir < 0)
+//		zoom -= 1.0f;
+//}
 
 void mouse(int button, int state, int x, int y)
 {
@@ -146,10 +155,11 @@ int main(int argc, char **argv)
 	glutDisplayFunc(display);
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
+	//glutMouseWheelFunc(mouse_wheel);
 
 	glEnable(GL_DEPTH_TEST);
 
-	// set up "headlamp"-like light
+	// set up simple lighting:
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_COLOR_MATERIAL);
 	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
