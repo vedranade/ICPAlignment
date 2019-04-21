@@ -91,11 +91,11 @@ void display()
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		glDisableClientState(GL_NORMAL_ARRAY);
 
-		//// bounding cube
-		//glDisable(GL_LIGHTING);
-		//glColor3ub(255, 255, 255);
-		//glutWireCube(7);
-		//glEnable(GL_LIGHTING);
+		// bounding cube
+		glDisable(GL_LIGHTING);
+		/*glColor3ub(255, 255, 255);
+		glutWireCube(7);*/
+		glEnable(GL_LIGHTING);
 	}
 	glPopMatrix();
 
