@@ -10,10 +10,17 @@ struct Vertex
 	glm::vec3 normal;
 };
 
+//struct VertRef
+//{
+//	VertRef(int v, int vt, int vn) : v(v), vt(vt), vn(vn) { }
+//	int v, vt, vn;
+//};
+
 struct VertRef
 {
-	VertRef(int v, int vt, int vn) : v(v), vt(vt), vn(vn) { }
-	int v, vt, vn;
+	VertRef(float v, float vt, float vn) : v(v), vt(vt), vn(vn) { }
+	float v, vt, vn;
 };
 
 std::vector<Vertex> loadOBJ(std::istream&);
+
