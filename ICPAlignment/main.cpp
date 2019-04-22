@@ -58,7 +58,7 @@ void CenterAndScale(Vec *pts, size_t stride, size_t count, const typename Vec::v
 	
 }
 
-void display_first()
+void display()
 {
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -73,8 +73,9 @@ void display_first()
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	glTranslatef(0, 0, -10);
 
+	//First input object:
+	glTranslatef(0, 0, -10);
 	glPushMatrix();
 	{
 		glRotatef(curRot.x % 360, 0, 1, 0);
@@ -101,26 +102,9 @@ void display_first()
 	}
 	glPopMatrix();
 
-	glutSwapBuffers();
-}
 
-void display_second()
-{
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	double w = glutGet(GLUT_WINDOW_WIDTH);
-	double h = glutGet(GLUT_WINDOW_HEIGHT);
-	double ar = w / h;
-	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, zoom);
-	gluPerspective(60, ar, 0.1, 100);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glTranslatef(0, 0, -10);
-
+	//Second input object:
+	glTranslatef(10, 0, -10);
 	glPushMatrix();
 	{
 		glRotatef(curRot.x % 360, 0, 1, 0);
@@ -202,8 +186,8 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
 	glutInitWindowSize(1280, 720);
 
-	glutCreateWindow("First Object");
-	glutDisplayFunc(display_first);
+	glutCreateWindow("Input Objects");
+	glutDisplayFunc(display);
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
 	//glutMouseWheelFunc(mouse_wheel);
@@ -219,28 +203,6 @@ int main(int argc, char **argv)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	GLfloat position[] = { 0, 0, 1, 0 };
-	glLightfv(GL_LIGHT0, GL_POSITION, position);
-
-	glPolygonMode(GL_FRONT, GL_FILL);
-	glPolygonMode(GL_BACK, GL_LINE);
-
-	glutCreateWindow("Second Object");
-	glutDisplayFunc(display_second);
-	glutMouseFunc(mouse);
-	glutMotionFunc(motion);
-	//glutMouseWheelFunc(mouse_wheel);
-
-	glEnable(GL_DEPTH_TEST);
-
-	// set up simple lighting:
-	glShadeModel(GL_SMOOTH);
-	glEnable(GL_COLOR_MATERIAL);
-	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	//GLfloat position[] = { 0, 0, 1, 0 };
 	glLightfv(GL_LIGHT0, GL_POSITION, position);
 
 	glPolygonMode(GL_FRONT, GL_FILL);
