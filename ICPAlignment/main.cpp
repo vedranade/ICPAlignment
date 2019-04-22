@@ -28,9 +28,9 @@ Eigen::MatrixXf convertToMat(std::vector<Vertex> input)
 	Eigen::MatrixXf Mat(input.size(), 3);
 	for (int i = 0; i < input.size(); i++)
 	{
-		Mat(i, 0) = first_model[i].position.x;
-		Mat(i, 1) = first_model[i].position.y;
-		Mat(i, 2) = first_model[i].position.z;
+		Mat(i, 0) = input[i].position.x;
+		Mat(i, 1) = input[i].position.y;
+		Mat(i, 2) = input[i].position.z;
 	}
 
 	return Mat;
