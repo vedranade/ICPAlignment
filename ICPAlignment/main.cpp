@@ -194,19 +194,21 @@ int main(int argc, char **argv)
 	first_model = loadOBJ(inputfile1);
 	CenterAndScale(&first_model[0].position, sizeof(Vertex), first_model.size(), 7);
 
-	std::ifstream inputfile2("dodecahedron.obj");
+	std::ifstream inputfile2("shuttle.obj");
 	second_model = loadOBJ(inputfile2);
 	CenterAndScale(&second_model[0].position, sizeof(Vertex), second_model.size(), 7);
 	
-
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
 	glutInitWindowSize(1280, 720);
-	glutCreateWindow("First object");
+
+	glutCreateWindow("First Object");
 	glutDisplayFunc(display_first);
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
 	//glutMouseWheelFunc(mouse_wheel);
+
+	glEnable(GL_DEPTH_TEST);
 
 	// set up simple lighting:
 	glShadeModel(GL_SMOOTH);
@@ -222,7 +224,7 @@ int main(int argc, char **argv)
 	glPolygonMode(GL_FRONT, GL_FILL);
 	glPolygonMode(GL_BACK, GL_LINE);
 
-	glutCreateWindow("Second object");
+	glutCreateWindow("Second Object");
 	glutDisplayFunc(display_second);
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
@@ -243,6 +245,7 @@ int main(int argc, char **argv)
 
 	glPolygonMode(GL_FRONT, GL_FILL);
 	glPolygonMode(GL_BACK, GL_LINE);
+
 	glutMainLoop();
 
 	return 0;
