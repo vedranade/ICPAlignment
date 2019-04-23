@@ -24,3 +24,5 @@ struct VertRef
 
 std::vector<Vertex> loadOBJ(std::istream&);
 
+glm::vec3 getClosestPoint(glm::vec3 input);
+

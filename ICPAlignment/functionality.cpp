@@ -8,6 +8,7 @@
 #include <istream>
 #include "functionality.h"
 
+//Function to load .obj file:
 std::vector<Vertex> loadOBJ(std::istream& in)
 {
 	std::vector< Vertex > verts;
@@ -92,4 +93,17 @@ std::vector<Vertex> loadOBJ(std::istream& in)
 	}
 
 	return verts;
+}
+
+//Function that takes in a point from second model and returns the closest point from the first model:
+glm::vec3 getClosestPoint(std::vector<Vertex> firstModelSet, glm::vec3 secondModelPoint, int index)
+{
+	glm::vec3 closestPoint;
+
+	for (int i = 0; i < firstModelSet.size(); i++)
+	{
+
+	}
+
+	return glm::vec3();
 }
