@@ -23,9 +23,46 @@ GLfloat zoom = 0.0f;
 std::vector<Vertex> first_model;
 std::vector<Vertex> second_model;
 
-Eigen::MatrixXf convertToMat(std::vector<Vertex> input)
+void displayOBJ(float x, float y, float z, std::vector<Vertex> model)
 {
-	Eigen::MatrixXf Mat(input.size(), 3);
+	glTranslatef(x, y, z);
+	glPushMatrix();
+	{
+		glRotatef(curRot.x % 360, 0, 1, 0);
+		glRotatef(-curRot.y % 360, 1, 0, 0);
+
+		// object
+		glColor3ub(255, 0, 0);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glVertexPointer(3, GL_FLOAT, sizeof(Vertex), &model[0].position);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &model[0].texture_coord);
+		glNormalPointer(GL_FLOAT, sizeof(Vertex), &model[0].normal);
+		glDrawArrays(GL_TRIANGLES, 0, model.size());
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+	}
+	glPopMatrix();
+}
+
+std::vector<Vertex> convertToVec(Eigen::MatrixXd input)
+{
+	std::vector<Vertex> Vec = first_model;
+	
+	for (int i = 0; i < input.rows(); i++)
+	{
+		Vec[i].position.x = input(i, 0);
+		Vec[i].position.y = input(i, 1);
+		Vec[i].position.z = input(i, 2);
+	}
+	return Vec;
+}
+
+Eigen::MatrixXd convertToMat(std::vector<Vertex> input)
+{
+	Eigen::MatrixXd Mat(input.size(), 3);
 	for (int i = 0; i < input.size(); i++)
 	{
 		Mat(i, 0) = input[i].position.x;
@@ -91,50 +128,53 @@ void display()
 	glLoadIdentity();
 
 	//First input object:
-	glTranslatef(0, 0, -10);
-	glPushMatrix();
-	{
-		glRotatef(curRot.x % 360, 0, 1, 0);
-		glRotatef(-curRot.y % 360, 1, 0, 0);
+	displayOBJ(0, 0, -10, first_model);
 
-		// object
-		glColor3ub(255, 0, 0);
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glEnableClientState(GL_NORMAL_ARRAY);
-		glVertexPointer(3, GL_FLOAT, sizeof(Vertex), &first_model[0].position);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &first_model[0].texture_coord);
-		glNormalPointer(GL_FLOAT, sizeof(Vertex), &first_model[0].normal);
-		glDrawArrays(GL_TRIANGLES, 0, first_model.size());
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
-	}
-	glPopMatrix();
+	//glTranslatef(0, 0, -10);
+	//glPushMatrix();
+	//{
+	//	glRotatef(curRot.x % 360, 0, 1, 0);
+	//	glRotatef(-curRot.y % 360, 1, 0, 0);
+
+	//	// object
+	//	glColor3ub(255, 0, 0);
+	//	glEnableClientState(GL_VERTEX_ARRAY);
+	//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	//	glEnableClientState(GL_NORMAL_ARRAY);
+	//	glVertexPointer(3, GL_FLOAT, sizeof(Vertex), &first_model[0].position);
+	//	glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &first_model[0].texture_coord);
+	//	glNormalPointer(GL_FLOAT, sizeof(Vertex), &first_model[0].normal);
+	//	glDrawArrays(GL_TRIANGLES, 0, first_model.size());
+	//	glDisableClientState(GL_VERTEX_ARRAY);
+	//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	//	glDisableClientState(GL_NORMAL_ARRAY);
+	//}
+	//glPopMatrix();
 
 
 	//Second input object:
-	glTranslatef(10, 0, -10);
-	glPushMatrix();
-	{
-		glRotatef(curRot.x % 360, 0, 1, 0);
-		glRotatef(-curRot.y % 360, 1, 0, 0);
+	displayOBJ(10, 0, -10, second_model);
+	//glTranslatef(10, 0, -10);
+	//glPushMatrix();
+	//{
+	//	glRotatef(curRot.x % 360, 0, 1, 0);
+	//	glRotatef(-curRot.y % 360, 1, 0, 0);
 
-		// object
-		glColor3ub(0, 255, 0);
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glEnableClientState(GL_NORMAL_ARRAY);
-		glVertexPointer(3, GL_FLOAT, sizeof(Vertex), &second_model[0].position);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &second_model[0].texture_coord);
-		glNormalPointer(GL_FLOAT, sizeof(Vertex), &second_model[0].normal);
-		glDrawArrays(GL_TRIANGLES, 0, second_model.size());
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
+	//	// object
+	//	glColor3ub(0, 255, 0);
+	//	glEnableClientState(GL_VERTEX_ARRAY);
+	//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	//	glEnableClientState(GL_NORMAL_ARRAY);
+	//	glVertexPointer(3, GL_FLOAT, sizeof(Vertex), &second_model[0].position);
+	//	glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &second_model[0].texture_coord);
+	//	glNormalPointer(GL_FLOAT, sizeof(Vertex), &second_model[0].normal);
+	//	glDrawArrays(GL_TRIANGLES, 0, second_model.size());
+	//	glDisableClientState(GL_VERTEX_ARRAY);
+	//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	//	glDisableClientState(GL_NORMAL_ARRAY);
 
-	}
-	glPopMatrix();
+	//}
+	//glPopMatrix();
 
 	glutSwapBuffers();
 }
@@ -187,9 +227,16 @@ int main(int argc, char **argv)
 	second_model = loadOBJ(inputfile2);
 	CenterAndScale(&second_model[0].position, sizeof(Vertex), second_model.size(), 7);
 
-	Eigen::MatrixXf first_modelMat = convertToMat(first_model);
-	Eigen::MatrixXf second_modelMat = convertToMat(second_model);
+	Eigen::MatrixXd first_modelMat = convertToMat(first_model);
+	Eigen::MatrixXd second_modelMat = convertToMat(second_model);
+
+	ICP_Solver solver = ICP_Solver(first_modelMat, second_modelMat);
+	solver.perform_icp();
+
+	std::vector<Vertex> first_modelVec = convertToVec(solver.data_verts);
+	std::vector<Vertex> second_modelVec = convertToVec(solver.model_verts);
 	
+
 	//glutInit(&argc, argv);
 	//glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
 	//glutInitWindowSize(1280, 720);
@@ -217,7 +264,7 @@ int main(int argc, char **argv)
 	//glPolygonMode(GL_BACK, GL_LINE);
 
 	//glutMainLoop();
-	std::cin.get();
+	//std::cin.get();
 
 	return 0;
 }
