@@ -21,7 +21,6 @@ ICP_Solver::ICP_Solver(Eigen::MatrixXd d, Eigen::MatrixXd m) :
 }
 
 void ICP_Solver::build_tree() {
-
 	model_kd_tree = new kd_tree_t(dim, model_verts, max_leaf);
 }
 

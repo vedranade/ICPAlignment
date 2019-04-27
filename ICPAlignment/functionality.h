@@ -42,7 +42,7 @@ class ICP_Solver {
 	double error = FLT_MAX;
 	double old_error = 0;
 	int iter_counter = 0;
-	const size_t max_it = 5;
+	const size_t max_it = 1;
 	const double tolerance = 0.000001;
 	const float sampling_quotient = 1.0;
 

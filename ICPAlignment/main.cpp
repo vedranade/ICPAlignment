@@ -37,15 +37,15 @@ void displayOBJ(float x, float y, float z, std::vector<Vertex> model)
 		// object
 		glColor3ub(255, 0, 0);
 		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glEnableClientState(GL_NORMAL_ARRAY);
+		//glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		//glEnableClientState(GL_NORMAL_ARRAY);
 		glVertexPointer(3, GL_FLOAT, sizeof(Vertex), &model[0].position);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &model[0].texture_coord);
-		glNormalPointer(GL_FLOAT, sizeof(Vertex), &model[0].normal);
-		glDrawArrays(GL_TRIANGLES, 0, model.size());
+		//glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &model[0].texture_coord);
+		//glNormalPointer(GL_FLOAT, sizeof(Vertex), &model[0].normal);
+		glDrawArrays(GL_POINTS, 0, model.size());
 		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
+		//glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		//glDisableClientState(GL_NORMAL_ARRAY);
 	}
 	glPopMatrix();
 }
@@ -53,13 +53,18 @@ void displayOBJ(float x, float y, float z, std::vector<Vertex> model)
 std::vector<Vertex> convertToVec(Eigen::MatrixXd input)
 {
 	//Initializes and populates the vector:
-	std::vector<Vertex> Vec = first_model;
+	std::vector<Vertex> Vec;
+	Vertex VecObject;
 	
 	for (int i = 0; i < input.rows(); i++)
 	{
-		Vec[i].position.x = input(i, 0);
+		/*Vec[i].position.x = input(i, 0);
 		Vec[i].position.y = input(i, 1);
-		Vec[i].position.z = input(i, 2);
+		Vec[i].position.z = input(i, 2);*/
+		VecObject.position = glm::vec3(input(i, 0), input(i, 1), input(i, 2));
+		VecObject.normal = glm::vec3(0, 0, 0);
+		VecObject.texture_coord = glm::vec3(0, 0, 0);
+		Vec.push_back(VecObject);
 	}
 	return Vec;
 }
@@ -160,7 +165,7 @@ void display_output()
 	displayOBJ(0, 0, -10, first_modelVec);
 
 	//Second input object:
-	displayOBJ(10, 0, -10, second_modelVec);
+	//displayOBJ(0, 0, -10, second_modelVec);
 
 	glutSwapBuffers();
 }
@@ -220,13 +225,14 @@ int main(int argc, char **argv)
 	solver.perform_icp();
 
 	first_modelVec = convertToVec(solver.data_verts);
-	second_modelVec = convertToVec(solver.model_verts);
+	//second_modelVec = convertToVec(solver.model_verts);
 	
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
 	glutInitWindowSize(1280, 720);
 
+	//Display input:
 	glutCreateWindow("Input Objects");
 	glutDisplayFunc(display_input);
 	glutMouseFunc(mouse);
@@ -235,41 +241,42 @@ int main(int argc, char **argv)
 
 	glEnable(GL_DEPTH_TEST);
 
-	// set up simple lighting:
-	glShadeModel(GL_SMOOTH);
-	glEnable(GL_COLOR_MATERIAL);
-	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	GLfloat position[] = { 0, 0, 1, 0 };
-	glLightfv(GL_LIGHT0, GL_POSITION, position);
-
-	glPolygonMode(GL_FRONT, GL_FILL);
-	glPolygonMode(GL_BACK, GL_LINE);
-
-	glutCreateWindow("Output Objects");
-	glutDisplayFunc(display_output);
-	glutMouseFunc(mouse);
-	glutMotionFunc(motion);
-	//glutMouseWheelFunc(mouse_wheel);
-
-	glEnable(GL_DEPTH_TEST);
-
-	// set up simple lighting:
-	glShadeModel(GL_SMOOTH);
-	glEnable(GL_COLOR_MATERIAL);
-	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	//// set up simple lighting:
+	//glShadeModel(GL_SMOOTH);
+	//glEnable(GL_COLOR_MATERIAL);
+	//glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+	//glEnable(GL_LIGHTING);
+	//glEnable(GL_LIGHT0);
+	//glMatrixMode(GL_MODELVIEW);
+	//glLoadIdentity();
 	//GLfloat position[] = { 0, 0, 1, 0 };
-	glLightfv(GL_LIGHT0, GL_POSITION, position);
+	//glLightfv(GL_LIGHT0, GL_POSITION, position);
 
-	glPolygonMode(GL_FRONT, GL_FILL);
-	glPolygonMode(GL_BACK, GL_LINE);
+	//glPolygonMode(GL_FRONT, GL_FILL);
+	//glPolygonMode(GL_BACK, GL_LINE);
+
+	////Display output:
+	//glutCreateWindow("Output Objects");
+	//glutDisplayFunc(display_output);
+	//glutMouseFunc(mouse);
+	//glutMotionFunc(motion);
+	////glutMouseWheelFunc(mouse_wheel);
+
+	//glEnable(GL_DEPTH_TEST);
+
+	//// set up simple lighting:
+	//glShadeModel(GL_SMOOTH);
+	//glEnable(GL_COLOR_MATERIAL);
+	//glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+	//glEnable(GL_LIGHTING);
+	//glEnable(GL_LIGHT0);
+	//glMatrixMode(GL_MODELVIEW);
+	//glLoadIdentity();
+	////GLfloat position[] = { 0, 0, 1, 0 };
+	//glLightfv(GL_LIGHT0, GL_POSITION, position);
+
+	//glPolygonMode(GL_FRONT, GL_FILL);
+	//glPolygonMode(GL_BACK, GL_LINE);
 
 
 
