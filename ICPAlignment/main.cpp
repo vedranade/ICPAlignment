@@ -178,6 +178,11 @@ int main(int argc, char **argv)
 	//std::ifstream inputfile2("lamp.obj");
 	second_model = loadOBJ(inputfile2);
 
+	//Shifting second model on x-axis a little:
+	for (int i = 0; i < second_model.size(); i++)
+		second_model[i].position.x += 10.0f;
+
+
 	Eigen::MatrixXd first_modelMat = convertToMat(first_model);
 	Eigen::MatrixXd second_modelMat = convertToMat(second_model);
 
