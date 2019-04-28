@@ -175,7 +175,6 @@ int main(int argc, char **argv)
 	first_model = loadOBJ(inputfile1);
 
 	std::ifstream inputfile2("shuttle.obj");
-	//std::ifstream inputfile2("lamp.obj");
 	second_model = loadOBJ(inputfile2);
 
 	//Shifting second model on x-axis a little:

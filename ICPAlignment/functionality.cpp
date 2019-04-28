@@ -88,19 +88,6 @@ void ICP_Solver::compute_closest_points() {
 	point_correspondence.clear();
 	weights.clear();
 
-	// Downsample
-	size_t N_sample = ceil(sampling_quotient * N_data);
-	std::vector<int> sample(N_sample);
-
-	for (int i = 0; i < N_sample; i++) {
-		if (sampling_quotient == 1.0) {
-			sample[i] = i;
-		}
-		else {
-			sample[i] = rand() % N_data;
-		}
-	}
-
 	// Do a 1-nn search
 	const size_t num_results = 1;
 	std::vector<size_t> nn_index(num_results);
@@ -109,44 +96,47 @@ void ICP_Solver::compute_closest_points() {
 	nanoflann::KNNResultSet<double> result_set(num_results);
 	double mean = 0;
 
-	for (int j = 0; j < N_sample; j++) {
-		// find closest model-point for data-point 'i'
-		int i = sample[j];
-
+	for (int i = 0; i < N_data; i++)
+	{
+		//For each point in first model, look for the closest point in the second model:
 		std::vector<double> query_pt = { data_verts(i, 0),
 										data_verts(i, 1),
 										data_verts(i, 2) };
 
 		result_set.init(&nn_index[0], &nn_distance[0]);
-		model_kd_tree->index->findNeighbors(result_set, &query_pt[0],
-			nanoflann::SearchParams(10));
+		model_kd_tree->index->findNeighbors(result_set, &query_pt[0], nanoflann::SearchParams(10));
 
 		point_correspondence[i] = nn_index[0];
 		distances[i] = nn_distance[0];
 		mean += nn_distance[0];
 
-	} mean /= N_sample;
+	} 
+	mean /= N_data;
 
 	// Compute variance and std dev. of the distances
 	double variance = 0;
-	for (int i = 0; i < N_sample; i++) {
-		variance += ((distances[sample[i]] - mean)*(distances[sample[i]] - mean));
-	} variance /= N_sample;
+	
+	for (int i = 0; i < N_data; i++) 
+		variance += ((distances[i] - mean)*(distances[i] - mean));
+	variance /= N_data;
 
 	double std_deviation = sqrt(variance);
 	double rejected = 0;
 
 	// Reject point-pairs based on threshold distance rule
 	double cmp;
-	for (int i = 0; i < N_sample; i++) {
+	
+	for (int i = 0; i < N_data; i++) 
+	{
 		cmp = 1.5*std_deviation;
-		if (std::abs(distances[sample[i]] - mean) > cmp) {
-			point_correspondence.erase(sample[i]);
+		if (std::abs(distances[i] - mean) > cmp) 
+		{
+			point_correspondence.erase(i);
 			rejected++;
 		}
 	}
 
-	std::cout << "Rejected " << rejected / N_sample
+	std::cout << "Rejected " << rejected / N_data
 		<< "% of the sample point-pairs." << std::endl;
 
 	// Find max distance between points
