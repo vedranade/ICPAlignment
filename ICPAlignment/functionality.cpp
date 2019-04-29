@@ -12,23 +12,16 @@
 const int dim = 3;
 const int max_leaf = 10;
 
-
-ICP_Solver::ICP_Solver() { std::cout << "Initialize with input meshes"; exit(-1); }
-
 ICP_Solver::ICP_Solver(Eigen::MatrixXd d, Eigen::MatrixXd m) :
 	data_verts(d), model_verts(m) {
 	N_data = d.rows();
 }
 
-void ICP_Solver::build_tree() {
-	model_kd_tree = new kd_tree_t(dim, model_verts, max_leaf);
-}
-
 bool ICP_Solver::perform_icp() {
 
-	build_tree();
+	model_kd_tree = new kd_tree_t(dim, model_verts, max_leaf);
 
-	while (step()) {
+	while (check_iter()) {
 		std::cout << "Iteration: " << iter_counter <<
 			", Error: " << error << std::endl;
 	}
@@ -43,12 +36,11 @@ bool ICP_Solver::perform_icp() {
 	}
 }
 
-bool ICP_Solver::step() {
+bool ICP_Solver::check_iter() {
 	double error_diff = std::abs(error - old_error);
 
 	if ((iter_counter < max_it) && !(error_diff < tolerance)) {
 
-		// Generate the downsampled truncated 1-nn point correspondence map
 		compute_closest_points();
 
 		// Compute the optimal transformation of the data
@@ -103,9 +95,10 @@ void ICP_Solver::compute_closest_points() {
 										data_verts(i, 1),
 										data_verts(i, 2) };
 
+		//Sets the point correspondence and point distance:
 		result_set.init(&nn_index[0], &nn_distance[0]);
-		model_kd_tree->index->findNeighbors(result_set, &query_pt[0], nanoflann::SearchParams(10));
 
+		model_kd_tree->index->findNeighbors(result_set, &query_pt[0], nanoflann::SearchParams(10));
 		point_correspondence[i] = nn_index[0];
 		distances[i] = nn_distance[0];
 		mean += nn_distance[0];
@@ -136,19 +129,16 @@ void ICP_Solver::compute_closest_points() {
 		}
 	}
 
-	std::cout << "Rejected " << rejected / N_data
-		<< "% of the sample point-pairs." << std::endl;
+	std::cout << "Rejected " << rejected / N_data << "% of the sample point-pairs." << std::endl;
 
 	// Find max distance between points
 	std::vector<double>::iterator max_dist_it;
 	max_dist_it = std::max_element(distances.begin(), distances.end());
 
 	// Define weights for registration step
-	for (std::map<int, int>::iterator it = point_correspondence.begin();
-		it != point_correspondence.end(); ++it) {
-
+	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it) 
+	{
 		weights[it->first] = 1 - (distances[it->first] / *max_dist_it);
-
 	}
 }
 
@@ -165,13 +155,12 @@ void ICP_Solver::compute_registration(Eigen::Vector3d &translation,
 
 	// Construct covariance matrix
 	Eigen::Matrix3d covariance_matrix = Eigen::Matrix3d::Zero();
-	for (std::map<int, int>::iterator it = point_correspondence.begin();
-		it != point_correspondence.end(); ++it) {
+	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it) 
+	{
 		int index = it->first;
-		covariance_matrix += weights[index] * (data_verts.row(index).transpose()
-			* model_verts.row(it->second));
-
-	} covariance_matrix /= N_pc;
+		covariance_matrix += weights[index] * (data_verts.row(index).transpose() * model_verts.row(it->second));
+	} 
+	covariance_matrix /= N_pc;
 	covariance_matrix -= (data_COM * model_COM.transpose());
 
 	// Construct Q-matrix

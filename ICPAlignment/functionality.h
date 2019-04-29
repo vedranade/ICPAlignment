@@ -48,16 +48,14 @@ class ICP_Solver {
 	const float sampling_quotient = 1.0;
 
 	public:
-	ICP_Solver();
 	ICP_Solver(Eigen::MatrixXd data_verts, Eigen::MatrixXd model_verts);
-	void build_tree();
 
 	/*
 	 * The main entry point for ICP alignment of the loaded meshes.
 	 * Iterates until convergence or maximum number of iterations is reached.
 	 */
 
-	bool step();
+	bool check_iter();
 
 	bool perform_icp();
 
