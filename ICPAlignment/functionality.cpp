@@ -12,36 +12,40 @@
 const int dim = 3;
 const int max_leaf = 10;
 
-ICP_Solver::ICP_Solver(Eigen::MatrixXd d, Eigen::MatrixXd m) :
-	data_verts(d), model_verts(m) {
+Aligner::Aligner(Eigen::MatrixXd d, Eigen::MatrixXd m) : firstModel_verts(d), secondModel_verts(m) 
+{
 	N_data = d.rows();
 }
 
-bool ICP_Solver::perform_icp() {
+bool Aligner::perform_icp() 
+{
 
-	model_kd_tree = new kd_tree_t(dim, model_verts, max_leaf);
+	model_kd_tree = new kd_tree_t(dim, secondModel_verts, max_leaf);
 
-	while (check_iter()) {
-		std::cout << "Iteration: " << iter_counter <<
-			", Error: " << error << std::endl;
+	while (check_iter()) 
+	{
+		//std::cout << "Iteration: " << iter_counter << ", Error: " << error << std::endl;
 	}
-
-	if (iteration_has_converged) {
-		std::cout << "Iteration converged!" << std::endl;
+	if (iteration_has_converged) 
+	{
+		//std::cout << "Iteration converged!" << std::endl;
 		return true;
 	}
-	else {
-		std::cout << "Iteration did not converge.." << std::endl;
+	else 
+	{
+		//std::cout << "Iteration did not converge.." << std::endl;
 		return false;
 	}
 }
 
-bool ICP_Solver::check_iter() {
+bool Aligner::check_iter() 
+{
 	double error_diff = std::abs(error - old_error);
 
-	if ((iter_counter < max_it) && !(error_diff < tolerance)) {
-
-		compute_closest_points();
+	if ((iter_counter < max_it) && !(error_diff < threshold)) 
+	{
+		//Calculate closest points using KD tree search:
+		pointSearch();
 
 		// Compute the optimal transformation of the data
 		translation = Eigen::Vector3d::Zero();
@@ -49,38 +53,37 @@ bool ICP_Solver::check_iter() {
 
 		compute_registration(translation, rotation);
 
-		// Transform the data mesh
-		data_verts = data_verts * rotation.transpose();
-		data_verts = data_verts + translation.transpose().replicate(N_data, 1);
+		// Transform the first model:
+		firstModel_verts = firstModel_verts * rotation.transpose();
+		firstModel_verts = firstModel_verts + translation.transpose().replicate(N_data, 1);
 
-		// Store accumulative transformations
-		final_rotation = rotation * final_rotation;
-		final_translation += translation;
+		//// Store accumulative transformations
+		//final_rotation = rotation * final_rotation;
+		//final_translation += translation;
 
-		// Save the error
-		old_error = error;
-		error = compute_rms_error(translation, rotation);
+		//// Save the error
+		//old_error = error;
+		//error = calculateError(translation, rotation);
 
 		iter_counter++;
 
 	}
-	else if (error_diff < tolerance) {
+	else if (error_diff < threshold) 
+	{
 		iteration_has_converged = true;
 		return false;
 	}
-	else if (iter_counter == max_it) {
+	else if (iter_counter == max_it)
 		return false;
-	}
 
 	return true;
 }
 
-void ICP_Solver::compute_closest_points() {
-
+void Aligner::pointSearch() 
+{
 	point_correspondence.clear();
 	weights.clear();
 
-	// Do a 1-nn search
 	const size_t num_results = 1;
 	std::vector<size_t> nn_index(num_results);
 	std::vector<double> nn_distance(num_results);
@@ -91,9 +94,9 @@ void ICP_Solver::compute_closest_points() {
 	for (int i = 0; i < N_data; i++)
 	{
 		//For each point in first model, look for the closest point in the second model:
-		std::vector<double> query_pt = { data_verts(i, 0),
-										data_verts(i, 1),
-										data_verts(i, 2) };
+		std::vector<double> query_pt = { firstModel_verts(i, 0),
+										firstModel_verts(i, 1),
+										firstModel_verts(i, 2) };
 
 		//Sets the point correspondence and point distance:
 		result_set.init(&nn_index[0], &nn_distance[0]);
@@ -102,11 +105,10 @@ void ICP_Solver::compute_closest_points() {
 		point_correspondence[i] = nn_index[0];
 		distances[i] = nn_distance[0];
 		mean += nn_distance[0];
-
 	} 
 	mean /= N_data;
 
-	// Compute variance and std dev. of the distances
+	// Calculate variance and std. dev. of distances:
 	double variance = 0;
 	
 	for (int i = 0; i < N_data; i++) 
@@ -117,49 +119,42 @@ void ICP_Solver::compute_closest_points() {
 	double rejected = 0;
 
 	// Reject point-pairs based on threshold distance rule
-	double cmp;
+	double comp;
 	
 	for (int i = 0; i < N_data; i++) 
 	{
-		cmp = 1.5*std_deviation;
-		if (std::abs(distances[i] - mean) > cmp) 
+		comp = 1.5 * std_deviation;
+		if (std::abs(distances[i] - mean) > comp) 
 		{
 			point_correspondence.erase(i);
 			rejected++;
 		}
 	}
 
-	std::cout << "Rejected " << rejected / N_data << "% of the sample point-pairs." << std::endl;
+	//std::cout << "Rejected " << rejected / N_data << "% of the sample point-pairs." << std::endl;
 
 	// Find max distance between points
 	std::vector<double>::iterator max_dist_it;
 	max_dist_it = std::max_element(distances.begin(), distances.end());
-
-	// Define weights for registration step
-	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it) 
-	{
-		weights[it->first] = 1 - (distances[it->first] / *max_dist_it);
-	}
 }
 
-void ICP_Solver::compute_registration(Eigen::Vector3d &translation,
-	Eigen::Matrix3d &rotation) {
-
-	size_t N_data = data_verts.rows();
-	size_t N_model = model_verts.rows();
+void Aligner::compute_registration(Eigen::Vector3d &translation, Eigen::Matrix3d &rotation)
+{
+	size_t N_data = firstModel_verts.rows();
+	size_t N_model = secondModel_verts.rows();
 	size_t N_pc = point_correspondence.size();
 
-	// Centres-of-mass
-	Eigen::Vector3d data_COM = data_verts.colwise().sum() / N_data;
-	Eigen::Vector3d model_COM = model_verts.colwise().sum() / N_model;
+	// Divide sum of each coordinate by number of data points to obtain center of mass:
+	Eigen::Vector3d data_COM = firstModel_verts.colwise().sum() / N_data;
+	Eigen::Vector3d model_COM = secondModel_verts.colwise().sum() / N_model;
 
 	// Construct covariance matrix
 	Eigen::Matrix3d covariance_matrix = Eigen::Matrix3d::Zero();
-	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it) 
+	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it)
 	{
 		int index = it->first;
-		covariance_matrix += weights[index] * (data_verts.row(index).transpose() * model_verts.row(it->second));
-	} 
+		covariance_matrix += (firstModel_verts.row(index).transpose() * secondModel_verts.row(it->second));
+	}
 	covariance_matrix /= N_pc;
 	covariance_matrix -= (data_COM * model_COM.transpose());
 
@@ -173,9 +168,7 @@ void ICP_Solver::compute_registration(Eigen::Vector3d &translation,
 	Q(0, 0) = Q_trace;
 	Q.block(1, 0, 3, 1) = delta;
 	Q.block(0, 1, 1, 3) = delta.transpose();
-	Q.block(1, 1, 3, 3) = covariance_matrix
-		+ covariance_matrix.transpose()
-		- Q_trace * Eigen::MatrixXd::Identity(3, 3);
+	Q.block(1, 1, 3, 3) = covariance_matrix + covariance_matrix.transpose() - Q_trace * Eigen::MatrixXd::Identity(3, 3);
 
 	// Find optimal unit quaternion
 	Eigen::EigenSolver<Eigen::Matrix4d> eigen_solver(Q);
@@ -183,30 +176,14 @@ void ICP_Solver::compute_registration(Eigen::Vector3d &translation,
 	eigen_solver.eigenvalues().real().cwiseAbs().maxCoeff(&max_ev_index);
 	Eigen::Vector4d q_optimal = eigen_solver.eigenvectors().real().col(max_ev_index);
 
-	// Store the computed solution in 'rotation' and 'translation'
-	quaternion_to_matrix(q_optimal, rotation);
+	// Store the calculate transformation:
+	calculateQMatrix(q_optimal, rotation);
 	translation = model_COM - rotation * data_COM;
-
 }
 
-double ICP_Solver::compute_rms_error(Eigen::Vector3d translation,
-	Eigen::Matrix3d rotation) {
-
-	size_t N_pc = point_correspondence.size();
-
-	Eigen::Vector3d diff;
-	double sum = 0;
-	for (std::map<int, int>::iterator it = point_correspondence.begin();
-		it != point_correspondence.end(); ++it) {
-		diff = model_verts.row(it->second).transpose() - rotation * data_verts.row(it->first).transpose() - translation;
-		sum += diff.norm();
-	} sum /= N_pc;
-
-	return sum;
-}
-
-void ICP_Solver::quaternion_to_matrix(Eigen::Vector4d q, Eigen::Matrix3d &R) {
-
+void Aligner::calculateQMatrix(Eigen::Vector4d q, Eigen::Matrix3d &R) 
+{
+	//Hard coding values for now:
 	R(0, 0) = q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3];
 	R(1, 0) = 2 * (q[1] * q[2] + q[0] * q[3]);
 	R(2, 0) = 2 * (q[1] * q[3] - q[0] * q[2]);
@@ -218,9 +195,6 @@ void ICP_Solver::quaternion_to_matrix(Eigen::Vector4d q, Eigen::Matrix3d &R) {
 	R(0, 2) = 2 * (q[1] * q[3] + q[0] * q[2]);
 	R(1, 2) = 2 * (q[2] * q[3] - q[0] * q[1]);
 	R(2, 2) = q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
-
-	//R.transposeInPlace();
-
 }
 
 std::vector<Vertex> loadOBJ(std::istream& in)
