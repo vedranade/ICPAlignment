@@ -14,7 +14,7 @@
 
 #include "functionality.h"
 
-int btn;
+//int btn;
 glm::ivec2 startMouse;
 glm::ivec2 startRot, curRot;
 glm::ivec2 startTrans, curTrans;
@@ -157,50 +157,12 @@ void display_output()
 	glutSwapBuffers();
 }
 
-//void mouse_wheel(int button, int dir, int x, int y)
-//{
-//	if(dir > 0)
-//		zoom += 1.0f;
-//	if(dir < 0)
-//		zoom -= 1.0f;
-//}
-
-void mouse(int button, int state, int x, int y)
-{
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-	{
-		btn = button;
-		startMouse = glm::ivec2(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
-		startRot = curRot;
-	}
-	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
-	{
-		btn = button;
-		startMouse = glm::ivec2(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
-		startTrans = curTrans;
-	}
-}
-
-void motion(int x, int y)
-{
-	glm::ivec2 curMouse(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
-	if (btn == GLUT_RIGHT_BUTTON)
-	{
-		curRot = startRot + (curMouse - startMouse);
-	}
-	else if (btn == GLUT_LEFT_BUTTON)
-	{
-		curTrans = startTrans + (curMouse - startMouse);
-	}
-	glutPostRedisplay();
-}
-
 int main(int argc, char **argv)
 {
-	std::ifstream inputfile1("pjanic.obj");
+	std::ifstream inputfile1("shuttle.obj");
 	first_model = loadOBJ(inputfile1);
 
-	std::ifstream inputfile2("pogba.obj");
+	std::ifstream inputfile2("shuttle.obj");
 	second_model = loadOBJ(inputfile2);
 
 	//Shifting second model on x-axis a little:

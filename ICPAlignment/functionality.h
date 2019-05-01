@@ -10,12 +10,23 @@
 #include <Eigen/Core>
 #include <Eigen/EigenValues>
 
+extern int btn;
+extern glm::ivec2 startMouse;
+extern glm::ivec2 startRot, curRot;
+extern glm::ivec2 startTrans, curTrans;
+
 struct Vertex
 {
 	glm::vec3 position;
 	glm::vec2 texture_coord;
 	glm::vec3 normal;
 };
+
+extern std::vector<Vertex> first_model;
+extern std::vector<Vertex> second_model;
+
+extern std::vector<Vertex> first_modelVec;
+extern std::vector<Vertex> second_modelVec;
 
 struct VertRef
 {
@@ -26,7 +37,7 @@ struct VertRef
 typedef nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXd, 3, nanoflann::metric_L1> kd_tree_t;
 typedef nanoflann::KDTreeEigenMatrixAdaptor<std::vector<Vertex>, 3, nanoflann::metric_L1> kd_tree_t1;
 
-class Aligner 
+class Aligner
 {
 	public:
 	Eigen::MatrixXd firstModel_verts; size_t N_data;
@@ -38,6 +49,7 @@ class Aligner
 	Eigen::Vector3d translation, final_translation = Eigen::Vector3d::Zero();
 	Eigen::Matrix3d rotation, final_rotation = Eigen::Matrix3d::Identity();
 	bool iteration_has_converged = false;
+
 
 	kd_tree_t *model_kd_tree;
 
@@ -65,5 +77,7 @@ class Aligner
 
 };
 
+void motion(int x, int y);
+void mouse(int button, int state, int x, int y);
 std::vector<Vertex> loadOBJ(std::istream&);
 

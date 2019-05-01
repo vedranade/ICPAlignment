@@ -11,6 +11,7 @@
 
 int dim = 3;
 int max_leaf = 10;
+int btn;
 
 Aligner::Aligner(Eigen::MatrixXd d, Eigen::MatrixXd m) : firstModel_verts(d), secondModel_verts(m) 
 {
@@ -315,4 +316,34 @@ std::vector<Vertex> loadOBJ(std::istream& in)
 
 	std::cout << "File parsed, returning data\n";
 	return verts;
+}
+
+void motion(int x, int y)
+{
+	glm::ivec2 curMouse(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
+	if (btn == GLUT_RIGHT_BUTTON)
+	{
+		curRot = startRot + (curMouse - startMouse);
+	}
+	else if (btn == GLUT_LEFT_BUTTON)
+	{
+		curTrans = startTrans + (curMouse - startMouse);
+	}
+	glutPostRedisplay();
+}
+
+void mouse(int button, int state, int x, int y)
+{
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+		btn = button;
+		startMouse = glm::ivec2(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
+		startRot = curRot;
+	}
+	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+	{
+		btn = button;
+		startMouse = glm::ivec2(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
+		startTrans = curTrans;
+	}
 }
