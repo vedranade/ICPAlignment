@@ -14,6 +14,7 @@ extern int btn;
 extern glm::ivec2 startMouse;
 extern glm::ivec2 startRot, curRot;
 extern glm::ivec2 startTrans, curTrans;
+extern GLfloat zoom;
 
 struct Vertex
 {
@@ -77,7 +78,12 @@ class Aligner
 
 };
 
+void displayInputOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model);
+void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model);
+void display_input();
+void display_output();
 void motion(int x, int y);
 void mouse(int button, int state, int x, int y);
+
 std::vector<Vertex> loadOBJ(std::istream&);
 

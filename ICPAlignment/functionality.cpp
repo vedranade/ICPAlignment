@@ -12,6 +12,7 @@
 int dim = 3;
 int max_leaf = 10;
 int btn;
+GLfloat zoom = 0.0f;
 
 Aligner::Aligner(Eigen::MatrixXd d, Eigen::MatrixXd m) : firstModel_verts(d), secondModel_verts(m) 
 {
@@ -316,6 +317,105 @@ std::vector<Vertex> loadOBJ(std::istream& in)
 
 	std::cout << "File parsed, returning data\n";
 	return verts;
+}
+
+void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model)
+{
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glTranslatef(x, y, z);
+	glPushMatrix();
+	{
+		//Handles mouse rotation:
+		glRotatef(curRot.x % 360, 0, 1, 0);
+		glRotatef(-curRot.y % 360, 1, 0, 0);
+
+		// object
+		glColor3ub(r, g, b);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(3, GL_FLOAT, sizeof(Vertex), &model[0].position);
+		glDrawArrays(GL_POINTS, 0, model.size());
+		glDisableClientState(GL_VERTEX_ARRAY);
+	}
+	glPopMatrix();
+}
+
+void displayInputOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model)
+{
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glTranslatef(x, y, z);
+	glPushMatrix();
+	{
+		//Handles mouse rotation:
+		glRotatef(curRot.x % 360, 0, 1, 0);
+		glRotatef(-curRot.y % 360, 1, 0, 0);
+
+		// object
+		glColor3ub(r, g, b);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glVertexPointer(3, GL_FLOAT, sizeof(Vertex), &model[0].position);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &model[0].texture_coord);
+		glNormalPointer(GL_FLOAT, sizeof(Vertex), &model[0].normal);
+		glDrawArrays(GL_TRIANGLES, 0, model.size());
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+	}
+	glPopMatrix();
+}
+
+void display_input()
+{
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	double w = glutGet(GLUT_WINDOW_WIDTH);
+	double h = glutGet(GLUT_WINDOW_HEIGHT);
+	double ar = w / h;
+	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, zoom);
+	gluPerspective(60, ar, 0.1, 100);
+
+	/*glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();*/
+	//First input object:
+	displayInputOBJ(255, 0, 0, 0, 0, -20, first_model);
+
+	//Second input object:
+	displayInputOBJ(0, 255, 0, 0, 0, -20, second_model);
+
+	glutSwapBuffers();
+}
+
+void display_output()
+{
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	double w = glutGet(GLUT_WINDOW_WIDTH);
+	double h = glutGet(GLUT_WINDOW_HEIGHT);
+	double ar = w / h;
+	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, zoom);
+	gluPerspective(60, ar, 0.1, 100);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	//First input object:
+	displayOBJ(255, 0, 0, 0, 0, -20, first_modelVec);
+
+	//Second input object:
+	displayOBJ(0, 255, 0, 0, 0, -20, second_modelVec);
+
+	glutSwapBuffers();
 }
 
 void motion(int x, int y)
