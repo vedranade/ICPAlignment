@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 	Eigen::MatrixXd second_modelMat = convertToMat(second_model);
 
 	Aligner solver = Aligner(first_modelMat, second_modelMat);
-	solver.perform_icp();
+	solver.calculateAlignment();
 
 	first_modelVec = convertToVec(solver.firstModel_verts);
 	second_modelVec = convertToVec(solver.secondModel_verts);

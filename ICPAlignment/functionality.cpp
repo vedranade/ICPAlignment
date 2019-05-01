@@ -9,87 +9,41 @@
 #include <iostream>
 #include "functionality.h"
 
-const int dim = 3;
-const int max_leaf = 10;
+int dim = 3;
+int max_leaf = 10;
 
 Aligner::Aligner(Eigen::MatrixXd d, Eigen::MatrixXd m) : firstModel_verts(d), secondModel_verts(m) 
 {
 	N_data = d.rows();
 }
 
-bool Aligner::perform_icp() 
+void Aligner::calculateAlignment() 
 {
-
 	model_kd_tree = new kd_tree_t(dim, secondModel_verts, max_leaf);
 
-	while (check_iter()) 
-	{
-		//std::cout << "Iteration: " << iter_counter << ", Error: " << error << std::endl;
-	}
-	if (iteration_has_converged) 
-	{
-		//std::cout << "Iteration converged!" << std::endl;
-		return true;
-	}
-	else 
-	{
-		//std::cout << "Iteration did not converge.." << std::endl;
-		return false;
-	}
-}
+	//Calculate closest points using KD tree search:
+	pointSearch();
 
-bool Aligner::check_iter() 
-{
-	double error_diff = std::abs(error - old_error);
+	// Compute the optimal transformation of the data
+	translation = Eigen::Vector3d::Zero();
+	rotation = Eigen::Matrix3d::Zero();
 
-	if ((iter_counter < max_it) && !(error_diff < threshold)) 
-	{
-		//Calculate closest points using KD tree search:
-		pointSearch();
+	calculateTransformation(translation, rotation);
 
-		// Compute the optimal transformation of the data
-		translation = Eigen::Vector3d::Zero();
-		rotation = Eigen::Matrix3d::Zero();
-
-		compute_registration(translation, rotation);
-
-		// Transform the first model:
-		firstModel_verts = firstModel_verts * rotation.transpose();
-		firstModel_verts = firstModel_verts + translation.transpose().replicate(N_data, 1);
-
-		//// Store accumulative transformations
-		//final_rotation = rotation * final_rotation;
-		//final_translation += translation;
-
-		//// Save the error
-		//old_error = error;
-		//error = calculateError(translation, rotation);
-
-		iter_counter++;
-
-	}
-	else if (error_diff < threshold) 
-	{
-		iteration_has_converged = true;
-		return false;
-	}
-	else if (iter_counter == max_it)
-		return false;
-
-	return true;
+	// Transform the first model:
+	firstModel_verts = firstModel_verts * rotation.transpose();
+	firstModel_verts = firstModel_verts + translation.transpose().replicate(N_data, 1);
 }
 
 void Aligner::pointSearch() 
 {
 	point_correspondence.clear();
-	weights.clear();
 
 	const size_t num_results = 1;
 	std::vector<size_t> nn_index(num_results);
 	std::vector<double> nn_distance(num_results);
 	std::vector<double> distances(N_data);
 	nanoflann::KNNResultSet<double> result_set(num_results);
-	double mean = 0;
 
 	for (int i = 0; i < N_data; i++)
 	{
@@ -104,41 +58,10 @@ void Aligner::pointSearch()
 		model_kd_tree->index->findNeighbors(result_set, &query_pt[0], nanoflann::SearchParams(10));
 		point_correspondence[i] = nn_index[0];
 		distances[i] = nn_distance[0];
-		mean += nn_distance[0];
-	} 
-	mean /= N_data;
-
-	// Calculate variance and std. dev. of distances:
-	double variance = 0;
-	
-	for (int i = 0; i < N_data; i++) 
-		variance += ((distances[i] - mean)*(distances[i] - mean));
-	variance /= N_data;
-
-	double std_deviation = sqrt(variance);
-	double rejected = 0;
-
-	// Reject point-pairs based on threshold distance rule
-	double comp;
-	
-	for (int i = 0; i < N_data; i++) 
-	{
-		comp = 1.5 * std_deviation;
-		if (std::abs(distances[i] - mean) > comp) 
-		{
-			point_correspondence.erase(i);
-			rejected++;
-		}
 	}
-
-	//std::cout << "Rejected " << rejected / N_data << "% of the sample point-pairs." << std::endl;
-
-	// Find max distance between points
-	std::vector<double>::iterator max_dist_it;
-	max_dist_it = std::max_element(distances.begin(), distances.end());
 }
 
-void Aligner::compute_registration(Eigen::Vector3d &translation, Eigen::Matrix3d &rotation)
+void Aligner::calculateTransformation(Eigen::Vector3d &translation, Eigen::Matrix3d &rotation)
 {
 	size_t N_data = firstModel_verts.rows();
 	size_t N_model = secondModel_verts.rows();
@@ -158,25 +81,29 @@ void Aligner::compute_registration(Eigen::Vector3d &translation, Eigen::Matrix3d
 	covariance_matrix /= N_pc;
 	covariance_matrix -= (data_COM * model_COM.transpose());
 
-	// Construct Q-matrix
+	// Construct anti-symmetric matrix:
 	Eigen::Matrix3d A = covariance_matrix - covariance_matrix.transpose();
-	Eigen::Vector3d delta;
-	delta << A(1, 2), A(2, 0), A(0, 1);
+	Eigen::Vector3d temp;
+	temp << A(1, 2), A(2, 0), A(0, 1);
 
+	//Calculate Qk:
 	Eigen::Matrix4d Q;
+
+	//Get sum of diagonals:
 	double Q_trace = covariance_matrix.trace();
 	Q(0, 0) = Q_trace;
-	Q.block(1, 0, 3, 1) = delta;
-	Q.block(0, 1, 1, 3) = delta.transpose();
+
+	Q.block(1, 0, 3, 1) = temp;
+	Q.block(0, 1, 1, 3) = temp.transpose();
 	Q.block(1, 1, 3, 3) = covariance_matrix + covariance_matrix.transpose() - Q_trace * Eigen::MatrixXd::Identity(3, 3);
 
-	// Find optimal unit quaternion
+	//Calculate optimal rotation:
 	Eigen::EigenSolver<Eigen::Matrix4d> eigen_solver(Q);
 	Eigen::MatrixXd::Index max_ev_index;
 	eigen_solver.eigenvalues().real().cwiseAbs().maxCoeff(&max_ev_index);
 	Eigen::Vector4d q_optimal = eigen_solver.eigenvectors().real().col(max_ev_index);
 
-	// Store the calculate transformation:
+	// Calculate optimal translation vector:
 	calculateQMatrix(q_optimal, rotation);
 	translation = model_COM - rotation * data_COM;
 }
