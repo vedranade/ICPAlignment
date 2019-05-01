@@ -32,6 +32,8 @@ class Aligner
 	Eigen::MatrixXd firstModel_verts; size_t N_data;
 	Eigen::MatrixXd secondModel_verts;
 	std::map<int, int> point_correspondence;
+	std::map<int, double> weights;
+	const float sampling_quotient = 1.0;
 
 	Eigen::Vector3d translation, final_translation = Eigen::Vector3d::Zero();
 	Eigen::Matrix3d rotation, final_rotation = Eigen::Matrix3d::Identity();
@@ -39,9 +41,16 @@ class Aligner
 
 	kd_tree_t *model_kd_tree;
 
+	double error = FLT_MAX;
+	double old_error = 0;
+	int iter_counter = 0;
+	const size_t max_it = 5;
+	//const double threshold = 0.000001;
+	const double threshold = 0.5;
+
 	Aligner(Eigen::MatrixXd firstModel_verts, Eigen::MatrixXd secondModel_verts);
 
-	void calculateAlignment();
+	bool calculateAlignment();
 
 	void pointSearch();
 
@@ -49,6 +58,10 @@ class Aligner
 		Eigen::Matrix3d &rotation);
 
 	void calculateQMatrix(Eigen::Vector4d q, Eigen::Matrix3d &R);
+
+	bool step();
+
+	double calculateError(Eigen::Vector3d translation, Eigen::Matrix3d rotation);
 
 };
 

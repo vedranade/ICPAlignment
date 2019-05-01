@@ -197,10 +197,10 @@ void motion(int x, int y)
 
 int main(int argc, char **argv)
 {
-	std::ifstream inputfile1("lamp.obj");
+	std::ifstream inputfile1("pjanic.obj");
 	first_model = loadOBJ(inputfile1);
 
-	std::ifstream inputfile2("shuttle.obj");
+	std::ifstream inputfile2("pogba.obj");
 	second_model = loadOBJ(inputfile2);
 
 	//Shifting second model on x-axis a little:
