@@ -319,6 +319,35 @@ std::vector<Vertex> loadOBJ(std::istream& in)
 	return verts;
 }
 
+std::vector<Vertex> convertToVec(Eigen::MatrixXd input)
+{
+	//Initializes and populates the vector:
+	std::vector<Vertex> Vec;
+	Vertex VecObject;
+
+	for (int i = 0; i < input.rows(); i++)
+	{
+		VecObject.position = glm::vec3(input(i, 0), input(i, 1), input(i, 2));
+		VecObject.normal = glm::vec3(0, 0, 0);
+		VecObject.texture_coord = glm::vec3(0, 0, 0);
+		Vec.push_back(VecObject);
+	}
+	return Vec;
+}
+
+Eigen::MatrixXd convertToMat(std::vector<Vertex> input)
+{
+	Eigen::MatrixXd Mat(input.size(), 3);
+	for (int i = 0; i < input.size(); i++)
+	{
+		Mat(i, 0) = input[i].position.x;
+		Mat(i, 1) = input[i].position.y;
+		Mat(i, 2) = input[i].position.z;
+	}
+
+	return Mat;
+}
+
 void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model)
 {
 	glMatrixMode(GL_MODELVIEW);

@@ -78,6 +78,8 @@ class Aligner
 
 };
 
+std::vector<Vertex> convertToVec(Eigen::MatrixXd input);
+Eigen::MatrixXd convertToMat(std::vector<Vertex> input);
 void displayInputOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model);
 void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model);
 void display_input();
