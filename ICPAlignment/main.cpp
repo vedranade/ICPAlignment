@@ -24,6 +24,59 @@ std::vector<Vertex> second_model;
 std::vector<Vertex> first_modelVec;
 std::vector<Vertex> second_modelVec;
 
+void display()
+{
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	double w = glutGet(GLUT_WINDOW_WIDTH);
+	double h = glutGet(GLUT_WINDOW_HEIGHT);
+	double ar = w / h;
+	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, zoom);
+	gluPerspective(60, ar, 0.1, 100);
+
+	//First input object:
+	//displayInputOBJ(255, 0, 0, 0, 0, -20, first_model);
+	displayOBJ(255, 0, 0, 0, 0, -20, first_model);
+	//Second input object:
+	//displayInputOBJ(0, 255, 0, 0, 0, -20, second_model);
+	displayOBJ(0, 255, 0, 0, 0, -20, second_model);
+
+	glutSwapBuffers();
+}
+
+void motion(int x, int y)
+{
+	glm::ivec2 curMouse(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
+	if (btn == GLUT_RIGHT_BUTTON)
+	{
+		curRot = startRot + (curMouse - startMouse);
+	}
+	else if (btn == GLUT_LEFT_BUTTON)
+	{
+		curTrans = startTrans + (curMouse - startMouse);
+	}
+	glutPostRedisplay();
+}
+
+void mouse(int button, int state, int x, int y)
+{
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+	{
+		btn = button;
+		startMouse = glm::ivec2(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
+		startRot = curRot;
+	}
+	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+	{
+		btn = button;
+		startMouse = glm::ivec2(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
+		startTrans = curTrans;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	std::ifstream inputfile1("shuttle.obj");
@@ -36,38 +89,36 @@ int main(int argc, char **argv)
 	for (int i = 0; i < second_model.size(); i++)
 		second_model[i].position.x += 10.0f;
 
-
 	Eigen::MatrixXd first_modelMat = convertToMat(first_model);
 	Eigen::MatrixXd second_modelMat = convertToMat(second_model);
 
 	Aligner solver = Aligner(first_modelMat, second_modelMat);
-	solver.calculateAlignment();
-
-	first_modelVec = convertToVec(solver.firstModel_verts);
-	second_modelVec = convertToVec(solver.secondModel_verts);
-	
-
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
 	glutInitWindowSize(1280, 720);
+	solver.calculateAlignment();
 
-	//Display input:
-	glutCreateWindow("Input Objects");
-	glutDisplayFunc(display_input);
-	glutMouseFunc(mouse);
-	glutMotionFunc(motion);
-	//glutMouseWheelFunc(mouse_wheel);
+	
 
-	glEnable(GL_DEPTH_TEST);
+	////Display input:
+	//glutCreateWindow("Input Objects");
+	//glutDisplayFunc(display);
+	//glutMouseFunc(mouse);
+	//glutMotionFunc(motion);
+	//glEnable(GL_DEPTH_TEST);
 
-	//Display output:
-	glutCreateWindow("Output Objects");
-	glutDisplayFunc(display_output);
-	glutMouseFunc(mouse);
-	glutMotionFunc(motion);
-	//glutMouseWheelFunc(mouse_wheel);
+	
 
-	glEnable(GL_DEPTH_TEST);
+	/*first_modelVec = convertToVec(solver.firstModel_verts);
+	second_modelVec = convertToVec(solver.secondModel_verts);*/
+
+	////Display output:
+	//glutCreateWindow("Output Objects");
+	//glutDisplayFunc(display_output);
+	//glutMouseFunc(mouse);
+	//glutMotionFunc(motion);
+	//glEnable(GL_DEPTH_TEST);
+
 	glutMainLoop();
 
 	return 0;

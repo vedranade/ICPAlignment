@@ -59,7 +59,7 @@ class Aligner
 	int iter_counter = 0;
 	const size_t max_it = 5;
 	//const double threshold = 0.000001;
-	const double threshold = 0.5;
+	const double threshold = 0.25;
 
 	Aligner(Eigen::MatrixXd firstModel_verts, Eigen::MatrixXd secondModel_verts);
 
@@ -83,6 +83,7 @@ Eigen::MatrixXd convertToMat(std::vector<Vertex> input);
 void displayInputOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model);
 void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model);
 void display_input();
+void display();
 void display_output();
 void motion(int x, int y);
 void mouse(int button, int state, int x, int y);

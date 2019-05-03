@@ -22,11 +22,16 @@ Aligner::Aligner(Eigen::MatrixXd d, Eigen::MatrixXd m) : firstModel_verts(d), se
 bool Aligner::calculateAlignment() 
 {
 	model_kd_tree = new kd_tree_t(dim, secondModel_verts, max_leaf);
+	glutCreateWindow("Input Objects");
+	glutDisplayFunc(display);
+	glutMouseFunc(mouse);
+	glutMotionFunc(motion);
 
-	while (step()) 
-	{
-		std::cout << "Iteration: " << iter_counter << ", Error: " << error << std::endl;
+	while (step()) {
+		std::cout << "Iteration: " << iter_counter <<
+			", Error: " << error << std::endl;
 	}
+
 	if (iteration_has_converged) {
 		std::cout << "Iteration converged!" << std::endl;
 		return true;
@@ -41,8 +46,9 @@ bool Aligner::step()
 {
 	double error_diff = std::abs(error - old_error);
 
-	if((iter_counter < max_it) && !(error_diff < threshold))
-	{
+	if ((iter_counter < max_it) && !(error_diff < threshold)) {
+
+		// Generate the downsampled truncated 1-nn point correspondence map
 		pointSearch();
 
 		// Compute the optimal transformation of the data
@@ -51,11 +57,18 @@ bool Aligner::step()
 
 		calculateTransformation(translation, rotation);
 
-		// Store intermediate transformations
+		// Transform the data mesh
 		firstModel_verts = firstModel_verts * rotation.transpose();
 		firstModel_verts = firstModel_verts + translation.transpose().replicate(N_data, 1);
 
-		// Store transformations
+		//first_modelVec = convertToVec(firstModel_verts);
+		//second_modelVec = convertToVec(secondModel_verts);
+		first_model = convertToVec(firstModel_verts);
+		second_model = convertToVec(secondModel_verts);
+
+		
+		
+		// Store accumulative transformations
 		final_rotation = rotation * final_rotation;
 		final_translation += translation;
 
@@ -64,15 +77,13 @@ bool Aligner::step()
 		error = calculateError(translation, rotation);
 
 		iter_counter++;
-
+		glutPostRedisplay();
 	}
-	else if (error_diff < threshold) 
-	{
+	else if (error_diff < threshold) {
 		iteration_has_converged = true;
 		return false;
 	}
-	else if (iter_counter == max_it) 
-	{
+	else if (iter_counter == max_it) {
 		return false;
 	}
 
@@ -97,6 +108,7 @@ void Aligner::pointSearch()
 		}
 	}
 
+	// Do a 1-nn search
 	const size_t num_results = 1;
 	std::vector<size_t> nn_index(num_results);
 	std::vector<double> nn_distance(num_results);
@@ -104,21 +116,23 @@ void Aligner::pointSearch()
 	nanoflann::KNNResultSet<double> result_set(num_results);
 	double mean = 0;
 
-	for (int i = 0; i < N_data; i++)
-	{
-		//For each point in first model, look for the closest point in the second model:
+	for (int j = 0; j < N_sample; j++) {
+		// find closest model-point for data-point 'i'
+		int i = sample[j];
+
 		std::vector<double> query_pt = { firstModel_verts(i, 0),
 										firstModel_verts(i, 1),
 										firstModel_verts(i, 2) };
 
-		//Sets the point correspondence and point distance:
 		result_set.init(&nn_index[0], &nn_distance[0]);
+		model_kd_tree->index->findNeighbors(result_set, &query_pt[0],
+			nanoflann::SearchParams(10));
 
-		model_kd_tree->index->findNeighbors(result_set, &query_pt[0], nanoflann::SearchParams(10));
 		point_correspondence[i] = nn_index[0];
 		distances[i] = nn_distance[0];
 		mean += nn_distance[0];
-	}
+
+	} 
 	mean /= N_sample;
 
 	// Compute variance and std dev. of the distances
@@ -140,16 +154,18 @@ void Aligner::pointSearch()
 		}
 	}
 
-	std::cout << "Rejected " << rejected / N_data << "% of the sample point-pairs." << std::endl;
+	std::cout << "Rejected " << rejected << " sample point-pairs." << std::endl;
 
 	// Find max distance between points
 	std::vector<double>::iterator max_dist_it;
 	max_dist_it = std::max_element(distances.begin(), distances.end());
 
 	// Define weights for registration step
-	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it) 
-	{
+	for (std::map<int, int>::iterator it = point_correspondence.begin();
+		it != point_correspondence.end(); ++it) {
+
 		weights[it->first] = 1 - (distances[it->first] / *max_dist_it);
+
 	}
 }
 
@@ -159,43 +175,41 @@ void Aligner::calculateTransformation(Eigen::Vector3d &translation, Eigen::Matri
 	size_t N_model = secondModel_verts.rows();
 	size_t N_pc = point_correspondence.size();
 
-	// Divide sum of each coordinate by number of data points to obtain center of mass:
+	// Centres-of-mass
 	Eigen::Vector3d data_COM = firstModel_verts.colwise().sum() / N_data;
 	Eigen::Vector3d model_COM = secondModel_verts.colwise().sum() / N_model;
 
 	// Construct covariance matrix
 	Eigen::Matrix3d covariance_matrix = Eigen::Matrix3d::Zero();
-	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it)
+	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it) 
 	{
 		int index = it->first;
 		covariance_matrix += weights[index] * (firstModel_verts.row(index).transpose() * secondModel_verts.row(it->second));
-	}
-	covariance_matrix /= N_pc;
+
+	} covariance_matrix /= N_pc;
 	covariance_matrix -= (data_COM * model_COM.transpose());
 
-	// Construct anti-symmetric matrix:
+	// Construct Q-matrix
 	Eigen::Matrix3d A = covariance_matrix - covariance_matrix.transpose();
-	Eigen::Vector3d temp;
-	temp << A(1, 2), A(2, 0), A(0, 1);
+	Eigen::Vector3d delta;
+	delta << A(1, 2), A(2, 0), A(0, 1);
 
-	//Calculate Qk:
 	Eigen::Matrix4d Q;
-
-	//Get sum of diagonals:
 	double Q_trace = covariance_matrix.trace();
 	Q(0, 0) = Q_trace;
+	Q.block(1, 0, 3, 1) = delta;
+	Q.block(0, 1, 1, 3) = delta.transpose();
+	Q.block(1, 1, 3, 3) = covariance_matrix
+		+ covariance_matrix.transpose()
+		- Q_trace * Eigen::MatrixXd::Identity(3, 3);
 
-	Q.block(1, 0, 3, 1) = temp;
-	Q.block(0, 1, 1, 3) = temp.transpose();
-	Q.block(1, 1, 3, 3) = covariance_matrix + covariance_matrix.transpose() - Q_trace * Eigen::MatrixXd::Identity(3, 3);
-
-	//Calculate optimal rotation:
+	// Find optimal unit quaternion
 	Eigen::EigenSolver<Eigen::Matrix4d> eigen_solver(Q);
 	Eigen::MatrixXd::Index max_ev_index;
 	eigen_solver.eigenvalues().real().cwiseAbs().maxCoeff(&max_ev_index);
 	Eigen::Vector4d q_optimal = eigen_solver.eigenvectors().real().col(max_ev_index);
 
-	// Calculate optimal translation vector:
+	// Store the computed solution in 'rotation' and 'translation'
 	calculateQMatrix(q_optimal, rotation);
 	translation = model_COM - rotation * data_COM;
 }
@@ -210,8 +224,7 @@ double Aligner::calculateError(Eigen::Vector3d translation, Eigen::Matrix3d rota
 	{
 		diff = secondModel_verts.row(it->second).transpose() - rotation * firstModel_verts.row(it->first).transpose() - translation;
 		sum += diff.norm();
-	}
-	sum /= N_pc;
+	} sum /= N_pc;
 
 	return sum;
 }
@@ -370,109 +383,3 @@ void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vert
 	glPopMatrix();
 }
 
-void displayInputOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model)
-{
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	glTranslatef(x, y, z);
-	glPushMatrix();
-	{
-		//Handles mouse rotation:
-		glRotatef(curRot.x % 360, 0, 1, 0);
-		glRotatef(-curRot.y % 360, 1, 0, 0);
-
-		// object
-		glColor3ub(r, g, b);
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glEnableClientState(GL_NORMAL_ARRAY);
-		glVertexPointer(3, GL_FLOAT, sizeof(Vertex), &model[0].position);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), &model[0].texture_coord);
-		glNormalPointer(GL_FLOAT, sizeof(Vertex), &model[0].normal);
-		glDrawArrays(GL_TRIANGLES, 0, model.size());
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
-	}
-	glPopMatrix();
-}
-
-void display_input()
-{
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	double w = glutGet(GLUT_WINDOW_WIDTH);
-	double h = glutGet(GLUT_WINDOW_HEIGHT);
-	double ar = w / h;
-	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, zoom);
-	gluPerspective(60, ar, 0.1, 100);
-
-	/*glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();*/
-	//First input object:
-	displayInputOBJ(255, 0, 0, 0, 0, -20, first_model);
-
-	//Second input object:
-	displayInputOBJ(0, 255, 0, 0, 0, -20, second_model);
-
-	glutSwapBuffers();
-}
-
-void display_output()
-{
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	double w = glutGet(GLUT_WINDOW_WIDTH);
-	double h = glutGet(GLUT_WINDOW_HEIGHT);
-	double ar = w / h;
-	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, zoom);
-	gluPerspective(60, ar, 0.1, 100);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	//First input object:
-	displayOBJ(255, 0, 0, 0, 0, -20, first_modelVec);
-
-	//Second input object:
-	displayOBJ(0, 255, 0, 0, 0, -20, second_modelVec);
-
-	glutSwapBuffers();
-}
-
-void motion(int x, int y)
-{
-	glm::ivec2 curMouse(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
-	if (btn == GLUT_RIGHT_BUTTON)
-	{
-		curRot = startRot + (curMouse - startMouse);
-	}
-	else if (btn == GLUT_LEFT_BUTTON)
-	{
-		curTrans = startTrans + (curMouse - startMouse);
-	}
-	glutPostRedisplay();
-}
-
-void mouse(int button, int state, int x, int y)
-{
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-	{
-		btn = button;
-		startMouse = glm::ivec2(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
-		startRot = curRot;
-	}
-	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
-	{
-		btn = button;
-		startMouse = glm::ivec2(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
-		startTrans = curTrans;
-	}
-}
