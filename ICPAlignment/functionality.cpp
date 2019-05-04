@@ -22,21 +22,18 @@ Aligner::Aligner(Eigen::MatrixXd d, Eigen::MatrixXd m) : firstModel_verts(d), se
 
 bool Aligner::calculateAlignment() 
 {
-	/*model_kd_tree = new kd_tree_t(dim, secondModel_verts, max_leaf);*/
-	/*glutCreateWindow("Input Objects");
-	glutDisplayFunc(display);
-	glutMouseFunc(mouse);
-	glutMotionFunc(motion);*/
-
-	while (step()) {
+	while (step()) 
+	{
 		std::cout << "Iteration: " << iter_counter << ", Error: " << error << std::endl;
 	}
 
-	if (iteration_has_converged) {
+	if (iteration_has_converged) 
+	{
 		std::cout << "Iteration converged!" << std::endl;
 		return true;
 	}
-	else {
+	else 
+	{
 		std::cout << "Iteration did not converge.." << std::endl;
 		return false;
 	}
@@ -61,13 +58,11 @@ bool Aligner::step()
 		firstModel_verts = firstModel_verts * rotation.transpose();
 		firstModel_verts = firstModel_verts + translation.transpose().replicate(N_data, 1);
 
-		//first_modelVec = convertToVec(firstModel_verts);
-		//second_modelVec = convertToVec(secondModel_verts);
 		first_model = convertToVec(firstModel_verts);
 		second_model = convertToVec(secondModel_verts);
 
-		
-		
+		//glutPostRedisplay();
+
 		// Store accumulative transformations
 		final_rotation = rotation * final_rotation;
 		final_translation += translation;
@@ -77,14 +72,16 @@ bool Aligner::step()
 		error = calculateError(translation, rotation);
 
 		iter_counter++;
-		Sleep(2000);
-		glutPostRedisplay();
+		//Sleep(2000);
+		//glutPostRedisplay();
 	}
-	else if (error_diff < threshold) {
+	else if (error_diff < threshold) 
+	{
 		iteration_has_converged = true;
 		return false;
 	}
-	else if (iter_counter == max_it) {
+	else if (iter_counter == max_it) 
+	{
 		return false;
 	}
 

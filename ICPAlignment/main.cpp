@@ -24,10 +24,11 @@ std::vector<Vertex> second_model;
 std::vector<Vertex> first_modelVec;
 std::vector<Vertex> second_modelVec;
 
-bool flag = false;
+static bool initialized;
 
 void display()
 {
+	std::cout << "Display called\n";
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -42,16 +43,16 @@ void display()
 	displayOBJ(255, 0, 0, 0, 0, -20, first_model);
 	
 	displayOBJ(0, 255, 0, 0, 0, -20, second_model);
-
-	if (flag == false)
+	glutSwapBuffers();
+	//std::cin.get();
+	if (!initialized)
 	{
+		initialized = true;
 		Eigen::MatrixXd first_modelMat = convertToMat(first_model);
 		Eigen::MatrixXd second_modelMat = convertToMat(second_model);
-
 		Aligner solver = Aligner(first_modelMat, second_modelMat);
 		solver.calculateAlignment();
 	}
-	flag == true;
 
 	glutSwapBuffers();
 }
@@ -98,10 +99,7 @@ int main(int argc, char **argv)
 	for (int i = 0; i < second_model.size(); i++)
 		second_model[i].position.x += 10.0f;
 
-	/*Eigen::MatrixXd first_modelMat = convertToMat(first_model);
-	Eigen::MatrixXd second_modelMat = convertToMat(second_model);
-
-	Aligner solver = Aligner(first_modelMat, second_modelMat);*/
+	
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
 	glutInitWindowSize(1280, 720);
@@ -110,30 +108,6 @@ int main(int argc, char **argv)
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
 	glutMainLoop();
-	//solver.calculateAlignment();
-
-	
-
-	////Display input:
-	//glutCreateWindow("Input Objects");
-	//glutDisplayFunc(display);
-	//glutMouseFunc(mouse);
-	//glutMotionFunc(motion);
-	//glEnable(GL_DEPTH_TEST);
-
-	
-
-	/*first_modelVec = convertToVec(solver.firstModel_verts);
-	second_modelVec = convertToVec(solver.secondModel_verts);*/
-
-	////Display output:
-	//glutCreateWindow("Output Objects");
-	//glutDisplayFunc(display_output);
-	//glutMouseFunc(mouse);
-	//glutMotionFunc(motion);
-	//glEnable(GL_DEPTH_TEST);
-
-	
 
 	return 0;
 }
