@@ -57,7 +57,7 @@ class Aligner
 	double error = FLT_MAX;
 	double old_error = 0;
 	int iter_counter = 0;
-	const size_t max_it = 5;
+	const size_t max_it = 1;
 	//const double threshold = 0.000001;
 	const double threshold = 0.25;
 
@@ -80,11 +80,9 @@ class Aligner
 
 std::vector<Vertex> convertToVec(Eigen::MatrixXd input);
 Eigen::MatrixXd convertToMat(std::vector<Vertex> input);
-void displayInputOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model);
+
 void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model);
-void display_input();
 void display();
-void display_output();
 void motion(int x, int y);
 void mouse(int button, int state, int x, int y);
 

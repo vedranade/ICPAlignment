@@ -17,19 +17,19 @@ GLfloat zoom = 0.0f;
 Aligner::Aligner(Eigen::MatrixXd d, Eigen::MatrixXd m) : firstModel_verts(d), secondModel_verts(m) 
 {
 	N_data = d.rows();
+	model_kd_tree = new kd_tree_t(dim, secondModel_verts, max_leaf);
 }
 
 bool Aligner::calculateAlignment() 
 {
-	model_kd_tree = new kd_tree_t(dim, secondModel_verts, max_leaf);
-	glutCreateWindow("Input Objects");
+	/*model_kd_tree = new kd_tree_t(dim, secondModel_verts, max_leaf);*/
+	/*glutCreateWindow("Input Objects");
 	glutDisplayFunc(display);
 	glutMouseFunc(mouse);
-	glutMotionFunc(motion);
+	glutMotionFunc(motion);*/
 
 	while (step()) {
-		std::cout << "Iteration: " << iter_counter <<
-			", Error: " << error << std::endl;
+		std::cout << "Iteration: " << iter_counter << ", Error: " << error << std::endl;
 	}
 
 	if (iteration_has_converged) {
@@ -77,6 +77,7 @@ bool Aligner::step()
 		error = calculateError(translation, rotation);
 
 		iter_counter++;
+		Sleep(2000);
 		glutPostRedisplay();
 	}
 	else if (error_diff < threshold) {

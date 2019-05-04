@@ -24,6 +24,8 @@ std::vector<Vertex> second_model;
 std::vector<Vertex> first_modelVec;
 std::vector<Vertex> second_modelVec;
 
+bool flag = false;
+
 void display()
 {
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -37,12 +39,19 @@ void display()
 	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, zoom);
 	gluPerspective(60, ar, 0.1, 100);
 
-	//First input object:
-	//displayInputOBJ(255, 0, 0, 0, 0, -20, first_model);
 	displayOBJ(255, 0, 0, 0, 0, -20, first_model);
-	//Second input object:
-	//displayInputOBJ(0, 255, 0, 0, 0, -20, second_model);
+	
 	displayOBJ(0, 255, 0, 0, 0, -20, second_model);
+
+	if (flag == false)
+	{
+		Eigen::MatrixXd first_modelMat = convertToMat(first_model);
+		Eigen::MatrixXd second_modelMat = convertToMat(second_model);
+
+		Aligner solver = Aligner(first_modelMat, second_modelMat);
+		solver.calculateAlignment();
+	}
+	flag == true;
 
 	glutSwapBuffers();
 }
@@ -89,14 +98,19 @@ int main(int argc, char **argv)
 	for (int i = 0; i < second_model.size(); i++)
 		second_model[i].position.x += 10.0f;
 
-	Eigen::MatrixXd first_modelMat = convertToMat(first_model);
+	/*Eigen::MatrixXd first_modelMat = convertToMat(first_model);
 	Eigen::MatrixXd second_modelMat = convertToMat(second_model);
 
-	Aligner solver = Aligner(first_modelMat, second_modelMat);
+	Aligner solver = Aligner(first_modelMat, second_modelMat);*/
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
 	glutInitWindowSize(1280, 720);
-	solver.calculateAlignment();
+	glutCreateWindow("Input Objects");
+	glutDisplayFunc(display);
+	glutMouseFunc(mouse);
+	glutMotionFunc(motion);
+	glutMainLoop();
+	//solver.calculateAlignment();
 
 	
 
@@ -119,7 +133,7 @@ int main(int argc, char **argv)
 	//glutMotionFunc(motion);
 	//glEnable(GL_DEPTH_TEST);
 
-	glutMainLoop();
+	
 
 	return 0;
 }
