@@ -57,11 +57,13 @@ class Aligner
 	double error = FLT_MAX;
 	double old_error = 0;
 	int iter_counter = 0;
-	const size_t max_it = 5;
+	const size_t max_it = 50;
 	//const double threshold = 0.000001;
 	const double threshold = 0.25;
 
-	Aligner(Eigen::MatrixXd firstModel_verts, Eigen::MatrixXd secondModel_verts);
+	//Aligner(Eigen::MatrixXd firstModel_verts, Eigen::MatrixXd secondModel_verts);
+
+	void initialize(Eigen::MatrixXd d, Eigen::MatrixXd m);
 
 	bool calculateAlignment();
 
@@ -85,6 +87,7 @@ void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vert
 void display();
 void motion(int x, int y);
 void mouse(int button, int state, int x, int y);
+void keyboard(unsigned char key, int x, int y);
 
 std::vector<Vertex> loadOBJ(std::istream&);
 

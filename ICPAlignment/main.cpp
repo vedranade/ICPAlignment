@@ -24,6 +24,8 @@ std::vector<Vertex> second_model;
 std::vector<Vertex> first_modelVec;
 std::vector<Vertex> second_modelVec;
 
+Aligner solver;
+
 static bool initialized;
 
 void display()
@@ -50,8 +52,9 @@ void display()
 		initialized = true;
 		Eigen::MatrixXd first_modelMat = convertToMat(first_model);
 		Eigen::MatrixXd second_modelMat = convertToMat(second_model);
-		Aligner solver = Aligner(first_modelMat, second_modelMat);
-		solver.calculateAlignment();
+		//Aligner solver = Aligner(first_modelMat, second_modelMat);
+		solver.initialize(first_modelMat, second_modelMat);
+		//solver.calculateAlignment();
 	}
 
 	glutSwapBuffers();
@@ -87,6 +90,17 @@ void mouse(int button, int state, int x, int y)
 	}
 }
 
+void keyboard(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+	case 'f':
+		solver.step();
+		glutPostRedisplay();
+		break;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	std::ifstream inputfile1("shuttle.obj");
@@ -107,6 +121,7 @@ int main(int argc, char **argv)
 	glutDisplayFunc(display);
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
+	glutKeyboardFunc(keyboard);
 	glutMainLoop();
 
 	return 0;
