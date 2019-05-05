@@ -10,6 +10,12 @@
 #include <Eigen/Core>
 #include <Eigen/EigenValues>
 
+#define N_pt 30    // # of points in the datasets
+#define N_tests 100    // # of test iterations
+#define noise_sigma 0.01    // standard deviation error to be added
+#define translation2 0.1     // max translation of the test set
+#define rotation2 0.1        // max rotation (radians) of the test set
+
 extern int btn;
 extern glm::ivec2 startMouse;
 extern glm::ivec2 startRot, curRot;
@@ -41,8 +47,8 @@ typedef nanoflann::KDTreeEigenMatrixAdaptor<std::vector<Vertex>, 3, nanoflann::m
 class Aligner
 {
 	public:
-	Eigen::MatrixXd firstModel_verts; size_t N_data;
-	Eigen::MatrixXd secondModel_verts;
+	Eigen::MatrixXd firstModel_verts, firstModel_verts_copy; size_t N_data, N_data_copy;
+	Eigen::MatrixXd secondModel_verts, secondModel_verts_copy;
 	std::map<int, int> point_correspondence;
 	std::map<int, double> weights;
 	const float sampling_quotient = 1.0;
@@ -57,17 +63,17 @@ class Aligner
 	double error = FLT_MAX;
 	double old_error = 0;
 	int iter_counter = 0;
-	const size_t max_it = 50;
+	const size_t max_it = 500;
 	//const double threshold = 0.000001;
-	const double threshold = 0.25;
-
-	//Aligner(Eigen::MatrixXd firstModel_verts, Eigen::MatrixXd secondModel_verts);
+	const double threshold = 0.001;
 
 	void initialize(Eigen::MatrixXd d, Eigen::MatrixXd m);
 
-	bool calculateAlignment();
-
 	void pointSearch();
+
+	void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove);
+
+	void getMinDistance(Eigen::MatrixXd A, Eigen::MatrixXd B, std::vector<double> distances);
 
 	void calculateTransformation(Eigen::Vector3d &translation,
 		Eigen::Matrix3d &rotation);
@@ -91,3 +97,29 @@ void keyboard(unsigned char key, int x, int y);
 
 std::vector<Vertex> loadOBJ(std::istream&);
 
+
+
+
+
+
+
+typedef struct {
+	Eigen::Matrix4d trans;
+	std::vector<float> distances;
+	int iter;
+}  ICP_OUT;
+
+typedef struct {
+	std::vector<float> distances;
+	std::vector<int> indices;
+} NEIGHBOR;
+
+Eigen::Matrix4d best_fit_transform(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B);
+
+ICP_OUT icp(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B, int max_iterations = 20, int tolerance = 0.001);
+
+// throughout method
+NEIGHBOR nearest_neighbot(const Eigen::MatrixXd &src, const Eigen::MatrixXd &dst);
+float dist(const Eigen::Vector3d &pta, const Eigen::Vector3d &ptb);
+
+void test_icp(Eigen::MatrixXd A, Eigen::MatrixXd B);
