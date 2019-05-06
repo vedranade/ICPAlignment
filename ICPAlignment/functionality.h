@@ -10,12 +10,6 @@
 #include <Eigen/Core>
 #include <Eigen/EigenValues>
 
-#define N_pt 30    // # of points in the datasets
-#define N_tests 100    // # of test iterations
-#define noise_sigma 0.01    // standard deviation error to be added
-#define translation2 0.1     // max translation of the test set
-#define rotation2 0.1        // max rotation (radians) of the test set
-
 extern int btn;
 extern glm::ivec2 startMouse;
 extern glm::ivec2 startRot, curRot;
@@ -64,8 +58,7 @@ class Aligner
 	double old_error = 0;
 	int iter_counter = 0;
 	const size_t max_it = 500;
-	//const double threshold = 0.000001;
-	const double threshold = 0.001;
+	const double threshold = 2.0;
 
 	void initialize(Eigen::MatrixXd d, Eigen::MatrixXd m);
 
@@ -73,7 +66,7 @@ class Aligner
 
 	void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove);
 
-	void getMinDistance(Eigen::MatrixXd A, Eigen::MatrixXd B, std::vector<double> distances);
+	void getMinDistance(Eigen::MatrixXd A, Eigen::MatrixXd B, std::vector<GLfloat> distances);
 
 	void calculateTransformation(Eigen::Vector3d &translation,
 		Eigen::Matrix3d &rotation);
@@ -96,30 +89,3 @@ void mouse(int button, int state, int x, int y);
 void keyboard(unsigned char key, int x, int y);
 
 std::vector<Vertex> loadOBJ(std::istream&);
-
-
-
-
-
-
-
-typedef struct {
-	Eigen::Matrix4d trans;
-	std::vector<float> distances;
-	int iter;
-}  ICP_OUT;
-
-typedef struct {
-	std::vector<float> distances;
-	std::vector<int> indices;
-} NEIGHBOR;
-
-Eigen::Matrix4d best_fit_transform(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B);
-
-ICP_OUT icp(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B, int max_iterations = 20, int tolerance = 0.001);
-
-// throughout method
-NEIGHBOR nearest_neighbot(const Eigen::MatrixXd &src, const Eigen::MatrixXd &dst);
-float dist(const Eigen::Vector3d &pta, const Eigen::Vector3d &ptb);
-
-void test_icp(Eigen::MatrixXd A, Eigen::MatrixXd B);
