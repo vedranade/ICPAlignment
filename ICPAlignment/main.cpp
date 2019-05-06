@@ -125,10 +125,10 @@ void keyboard(unsigned char key, int x, int y)
 
 int main(int argc, char **argv)
 {
-	std::ifstream inputfile1("shuttle.obj");
+	std::ifstream inputfile1("part.obj");
 	first_model = loadOBJ(inputfile1);
 
-	std::ifstream inputfile2("shuttle.obj");
+	std::ifstream inputfile2("part.obj");
 	second_model = loadOBJ(inputfile2);
 
 	//Shifting second model on x-axis a little:

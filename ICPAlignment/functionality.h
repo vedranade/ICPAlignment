@@ -58,7 +58,7 @@ class Aligner
 	double old_error = 0;
 	int iter_counter = 0;
 	const size_t max_it = 500;
-	const double threshold = 2.0;
+	const double threshold = 0.0001;
 
 	void initialize(Eigen::MatrixXd d, Eigen::MatrixXd m);
 
@@ -66,7 +66,10 @@ class Aligner
 
 	void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove);
 
-	void getMinDistance(Eigen::MatrixXd A, Eigen::MatrixXd B, std::vector<GLfloat> distances);
+	void getMinThreaded(Eigen::MatrixXd &A, Eigen::MatrixXd &B, int startA, int endA, int startB, int endB,
+		std::map<int, int> &pc, std::vector<GLfloat> &d);
+
+	void getMinDistance(Eigen::MatrixXd A, Eigen::MatrixXd B, std::vector<GLfloat> &distances);
 
 	void calculateTransformation(Eigen::Vector3d &translation,
 		Eigen::Matrix3d &rotation);

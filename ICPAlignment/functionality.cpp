@@ -3,6 +3,8 @@
 
 #include <glm/glm.hpp>
 #include <Eigen/Eigen>
+
+#include <thread>
 #include <vector>
 #include <fstream>
 #include <sstream>
@@ -76,7 +78,32 @@ bool Aligner::step()
 	return true;
 }
 
-void Aligner::getMinDistance(Eigen::MatrixXd A, Eigen::MatrixXd B, std::vector<GLfloat> distances)
+void Aligner::getMinThreaded(Eigen::MatrixXd &A, Eigen::MatrixXd &B, int startA, int endA, int startB, int endB, 
+	std::map<int, int> &pc, std::vector<GLfloat> &d)
+{
+	
+	for (int i = startA; i < endA; i++)
+	{
+		GLdouble min = DBL_MAX;
+		int minj = B.size() - 1;
+		GLfloat Ax = A(i, 0); GLfloat Ay = A(i, 1); GLfloat Az = A(i, 2);
+		for (int j = startB; j < endB; j++)
+		{
+			GLfloat Bx = B(j, 0); GLfloat By = B(j, 1); GLfloat Bz = B(j, 2);
+			GLfloat dist = ((Ax - Bx) * (Ax - Bx)) + ((Ay - By) * (Ay - By)) + ((Az - Bz) * (Az - Bz));
+			dist = sqrt(dist);
+			if (dist < min)
+			{
+				min = dist;
+				minj = j;
+			}
+		}
+		pc[i] = minj;
+		d[i] = min;
+	}
+}
+
+void Aligner::getMinDistance(Eigen::MatrixXd A, Eigen::MatrixXd B, std::vector<GLfloat> &distances)
 {
 	std::cout << "Calculating point correspondence...\n";
 	for (int i = 0; i < A.rows(); i++)
@@ -155,8 +182,14 @@ void Aligner::pointSearch()
 
 	//} 
 	//mean /= N_sample;
-	getMinDistance(firstModel_verts, secondModel_verts, distances);
-	/*for (int i = 0; i < firstModel_verts.rows(); i++)
+	/*std::map<int, int> pc1;
+	std::map<int, int> pc2;
+	std::vector<GLfloat> dist1;
+	std::vector<GLfloat> dist2;*/
+	/*getMinDistance(firstModel_verts, secondModel_verts, distances);*/
+	//getMinDistance(firstModel_verts, secondModel_verts, distances);
+	
+	for (int i = 0; i < firstModel_verts.rows(); i++)
 	{
 		std::vector<double> query_pt = {
 			firstModel_verts(i, 0),
@@ -167,7 +200,7 @@ void Aligner::pointSearch()
 		model_kd_tree->index->findNeighbors(result_set, &query_pt[0], nanoflann::SearchParams(10));
 		point_correspondence[i] = nn_index[0];
 		distances[i] = nn_distance[0];
-	}*/
+	}
 
 	//// Compute variance and std dev. of the distances
 	//double variance = 0;
@@ -236,7 +269,8 @@ void Aligner::calculateTransformation(Eigen::Vector3d &translation, Eigen::Matri
 	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it) 
 	{
 		int index = it->first;
-		covariance_matrix += weights[index] * (firstModel_verts.row(index).transpose() * secondModel_verts.row(it->second));
+		/*covariance_matrix += weights[index] * (firstModel_verts.row(index).transpose() * secondModel_verts.row(it->second));*/
+		covariance_matrix += (firstModel_verts.row(index).transpose() * secondModel_verts.row(it->second));
 
 	} covariance_matrix /= N_pc;
 	covariance_matrix -= (data_COM * model_COM.transpose());
