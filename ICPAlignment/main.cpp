@@ -49,22 +49,7 @@ void display()
 	displayOBJ(0, 255, 255, 0, 0, -20, first_model);
 	
 	displayOBJ(0, 255, 0, 0, 0, -20, second_model);
-	glEnable(GL_DEPTH_TEST);
-
-	// set up "headlamp"-like light
-	glShadeModel(GL_SMOOTH);
-	glEnable(GL_COLOR_MATERIAL);
-	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	GLfloat position[] = { 0, 0, 1, 0 };
-	glLightfv(GL_LIGHT0, GL_POSITION, position);
-
-	glPolygonMode(GL_FRONT, GL_FILL);
-	glPolygonMode(GL_BACK, GL_LINE);
-	glutSwapBuffers();
+	//glutSwapBuffers();
 	//std::cin.get();
 	if (!initialized)
 	{
@@ -144,21 +129,21 @@ int main(int argc, char **argv)
 	glutMotionFunc(motion);
 	glutKeyboardFunc(keyboard);
 
-	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
 
-	//// set up "headlamp"-like light
-	//glShadeModel(GL_SMOOTH);
-	//glEnable(GL_COLOR_MATERIAL);
-	//glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-	//glEnable(GL_LIGHTING);
-	//glEnable(GL_LIGHT0);
-	//glMatrixMode(GL_MODELVIEW);
-	//glLoadIdentity();
-	//GLfloat position[] = { 0, 0, 1, 0 };
-	//glLightfv(GL_LIGHT0, GL_POSITION, position);
+	// set up "headlamp"-like light
+	glShadeModel(GL_SMOOTH);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	GLfloat position[] = { 0, 0, 1, 0 };
+	glLightfv(GL_LIGHT0, GL_POSITION, position);
 
-	//glPolygonMode(GL_FRONT, GL_FILL);
-	//glPolygonMode(GL_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT, GL_FILL);
+	glPolygonMode(GL_BACK, GL_LINE);
 
 	glutMainLoop();
 

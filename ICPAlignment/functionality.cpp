@@ -49,8 +49,8 @@ bool Aligner::step()
 		firstModel_verts = firstModel_verts * rotation.transpose();
 		firstModel_verts = firstModel_verts + translation.transpose().replicate(N_data, 1);
 
-		first_model = convertToVec(firstModel_verts);
-		second_model = convertToVec(secondModel_verts);
+		first_model = convertToVec(firstModel_verts, first_model);
+		//second_model = convertToVec(secondModel_verts);
 
 
 		// Store accumulative transformations
@@ -133,25 +133,6 @@ void Aligner::getMinDistance(Eigen::MatrixXd A, Eigen::MatrixXd B, std::vector<G
 
 void Aligner::pointSearch() 
 {
-	//point_correspondence.clear();
-	//weights.clear();
-
-	// Downsample
-	size_t N_sample = ceil(sampling_quotient * N_data);
-	//size_t N_sample = ceil(sampling_quotient * N_data_copy);
-	std::vector<int> sample(N_sample);
-
-	for (int i = 0; i < N_sample; i++) {
-		if (sampling_quotient == 1.0) {
-			sample[i] = i;
-		}
-		else {
-			//sample[i] = rand() % N_data;
-			sample[i] = rand() % N_data_copy;
-		}
-	}
-
-	// Do a 1-nn search
 	const size_t num_results = 1;
 	std::vector<size_t> nn_index(num_results);
 	std::vector<GLfloat> nn_distance(num_results);
@@ -160,33 +141,6 @@ void Aligner::pointSearch()
 	nanoflann::KNNResultSet<GLfloat> result_set(num_results);
 	double mean = 0;
 
-	//for (int j = 0; j < N_sample; j++) 
-	//{
-	//	// find closest model-point for data-point 'i'
-	//	int i = sample[j];
-
-	//	std::vector<double> query_pt = { firstModel_verts(i, 0),
-	//									firstModel_verts(i, 1),
-	//									firstModel_verts(i, 2) };
-	//	/*std::vector<double> query_pt = { firstModel_verts_copy(i, 0),
-	//									firstModel_verts_copy(i, 1),
-	//									firstModel_verts_copy(i, 2) };*/
-
-	//	result_set.init(&nn_index[0], &nn_distance[0]);
-	//	model_kd_tree->index->findNeighbors(result_set, &query_pt[0],
-	//		nanoflann::SearchParams(10));
-
-	//	point_correspondence[i] = nn_index[0];
-	//	distances[i] = nn_distance[0];
-	//	mean += nn_distance[0];
-
-	//} 
-	//mean /= N_sample;
-	/*std::map<int, int> pc1;
-	std::map<int, int> pc2;
-	std::vector<GLfloat> dist1;
-	std::vector<GLfloat> dist2;*/
-	/*getMinDistance(firstModel_verts, secondModel_verts, distances);*/
 	//getMinDistance(firstModel_verts, secondModel_verts, distances);
 	
 	for (int i = 0; i < firstModel_verts.rows(); i++)
@@ -224,21 +178,21 @@ void Aligner::pointSearch()
 	//	}
 	//}
 
-	//std::cout << "Rejected " << rejected << " sample point-pairs." << std::endl;
-	std::cout << point_correspondence.size() << std::endl;
+	////std::cout << "Rejected " << rejected << " sample point-pairs." << std::endl;
+	//std::cout << point_correspondence.size() << std::endl;
 
-	// Find max distance between points
-	//std::vector<double>::iterator max_dist_it;
-	std::vector<GLfloat>::iterator max_dist_it;
-	max_dist_it = std::max_element(distances.begin(), distances.end());
+	//// Find max distance between points
+	////std::vector<double>::iterator max_dist_it;
+	//std::vector<GLfloat>::iterator max_dist_it;
+	//max_dist_it = std::max_element(distances.begin(), distances.end());
 
-	// Define weights for registration step
-	for (std::map<int, int>::iterator it = point_correspondence.begin();
-		it != point_correspondence.end(); ++it) {
+	//// Define weights for registration step
+	//for (std::map<int, int>::iterator it = point_correspondence.begin();
+	//	it != point_correspondence.end(); ++it) {
 
-		weights[it->first] = 1 - (distances[it->first] / *max_dist_it);
+	//	weights[it->first] = 1 - (distances[it->first] / *max_dist_it);
 
-	}
+	//}
 }
 
 void Aligner::removeRow(Eigen::MatrixXd & matrix, unsigned int rowToRemove)
@@ -418,7 +372,7 @@ std::vector<Vertex> loadOBJ(std::istream& in)
 	return verts;
 }
 
-std::vector<Vertex> convertToVec(Eigen::MatrixXd input)
+std::vector<Vertex> convertToVec(Eigen::MatrixXd input, std::vector<Vertex> Verts)
 {
 	//Initializes and populates the vector:
 	std::vector<Vertex> Vec;
@@ -427,8 +381,8 @@ std::vector<Vertex> convertToVec(Eigen::MatrixXd input)
 	for (int i = 0; i < input.rows(); i++)
 	{
 		VecObject.position = glm::vec3(input(i, 0), input(i, 1), input(i, 2));
-		VecObject.normal = glm::vec3(0, 0, 0);
-		VecObject.texture_coord = glm::vec3(0, 0, 0);
+		VecObject.normal = Verts[i].normal;
+		VecObject.texture_coord = Verts[i].texture_coord;
 		Vec.push_back(VecObject);
 	}
 	return Vec;
@@ -473,4 +427,5 @@ void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vert
 		glDisableClientState(GL_NORMAL_ARRAY);
 	}
 	glPopMatrix();
+	glutSwapBuffers();
 }

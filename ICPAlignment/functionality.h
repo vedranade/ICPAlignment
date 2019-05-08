@@ -58,7 +58,8 @@ class Aligner
 	double old_error = 0;
 	int iter_counter = 0;
 	const size_t max_it = 500;
-	const double threshold = 0.0001;
+	//const double threshold = 0.0001;		//For same obj
+	const double threshold = 0.01;
 
 	void initialize(Eigen::MatrixXd d, Eigen::MatrixXd m);
 
@@ -82,7 +83,7 @@ class Aligner
 
 };
 
-std::vector<Vertex> convertToVec(Eigen::MatrixXd input);
+std::vector<Vertex> convertToVec(Eigen::MatrixXd input, std::vector<Vertex> Verts);
 Eigen::MatrixXd convertToMat(std::vector<Vertex> input);
 
 void displayOBJ(int r, int g, int b, float x, float y, float z, std::vector<Vertex> model);
