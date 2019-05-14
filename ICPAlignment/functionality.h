@@ -10,6 +10,8 @@
 #include <Eigen/Core>
 #include <Eigen/EigenValues>
 
+using namespace Eigen;
+
 extern int btn;
 extern glm::ivec2 startMouse;
 extern glm::ivec2 startRot, curRot;
@@ -36,19 +38,16 @@ struct VertRef
 };
 
 typedef nanoflann::KDTreeEigenMatrixAdaptor<Eigen::MatrixXd, 3, nanoflann::metric_L1> kd_tree_t;
-typedef nanoflann::KDTreeEigenMatrixAdaptor<std::vector<Vertex>, 3, nanoflann::metric_L1> kd_tree_t1;
 
 class Aligner
 {
 	public:
-	Eigen::MatrixXd firstModel_verts, firstModel_verts_copy; size_t N_data, N_data_copy;
-	Eigen::MatrixXd secondModel_verts, secondModel_verts_copy;
+	MatrixXd firstModel_verts; size_t N_data;
+	MatrixXd secondModel_verts;
 	std::map<int, int> point_correspondence;
-	std::map<int, double> weights;
-	const float sampling_quotient = 1.0;
 
-	Eigen::Vector3d translation, final_translation = Eigen::Vector3d::Zero();
-	Eigen::Matrix3d rotation, final_rotation = Eigen::Matrix3d::Identity();
+	Vector3d translation, final_translation = Vector3d::Zero();
+	Matrix3d rotation, final_rotation = Matrix3d::Identity();
 	bool iteration_has_converged = false;
 
 
@@ -58,7 +57,6 @@ class Aligner
 	double old_error = 0;
 	int iter_counter = 0;
 	const size_t max_it = 500;
-	//const double threshold = 0.0001;		//For same obj
 	const double threshold = 0.01;
 
 	void initialize(Eigen::MatrixXd d, Eigen::MatrixXd m);

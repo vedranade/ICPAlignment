@@ -12,7 +12,6 @@
 #include <sstream>
 #include <vector>
 #include <numeric>
-#include <sys/utime.h>
 
 #include "functionality.h"
 
@@ -34,7 +33,6 @@ static bool initialized;
 
 void display()
 {
-	std::cout << "Display called\n";
 	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -43,21 +41,24 @@ void display()
 	double w = glutGet(GLUT_WINDOW_WIDTH);
 	double h = glutGet(GLUT_WINDOW_HEIGHT);
 	double ar = w / h;
-	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, zoom);
-	gluPerspective(60, ar, 0.1, 100);
-
+	glTranslatef(curTrans.x / w * 2, curTrans.y / h * 2, 0.0);
+	gluPerspective(60, ar, 0.01, 1000);
+	gluLookAt
+	(
+		0.0, 0.0, zoom,
+		0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0
+	);
 	displayOBJ(0, 255, 255, 0, 0, -20, first_model);
 	
 	displayOBJ(0, 255, 0, 0, 0, -20, second_model);
-	//glutSwapBuffers();
-	//std::cin.get();
+
 	if (!initialized)
 	{
 		initialized = true;
 		Eigen::MatrixXd first_modelMat = convertToMat(first_model);
 		Eigen::MatrixXd second_modelMat = convertToMat(second_model);
 		solver.initialize(first_modelMat, second_modelMat);
-		//test_icp(first_modelMat, second_modelMat);
 	}
 
 	glutSwapBuffers();
@@ -67,13 +68,9 @@ void motion(int x, int y)
 {
 	glm::ivec2 curMouse(x, glutGet(GLUT_WINDOW_HEIGHT) - y);
 	if (btn == GLUT_RIGHT_BUTTON)
-	{
 		curRot = startRot + (curMouse - startMouse);
-	}
 	else if (btn == GLUT_LEFT_BUTTON)
-	{
 		curTrans = startTrans + (curMouse - startMouse);
-	}
 	glutPostRedisplay();
 }
 
@@ -105,15 +102,31 @@ void keyboard(unsigned char key, int x, int y)
 		solver.step();
 		glutPostRedisplay();
 		break;
+	case 'w':
+		zoom -= 1.0f;
+		glutPostRedisplay();
+		break;
+	case 'W':
+		zoom -= 1.0f;
+		glutPostRedisplay();
+		break;
+	case 's':
+		zoom += 1.0f;
+		glutPostRedisplay();
+		break;
+	case 'S':
+		zoom += 1.0f;
+		glutPostRedisplay();
+		break;
 	}
 }
 
 int main(int argc, char **argv)
 {
-	std::ifstream inputfile1("part.obj");
+	std::ifstream inputfile1("magnolia.obj");
 	first_model = loadOBJ(inputfile1);
 
-	std::ifstream inputfile2("part.obj");
+	std::ifstream inputfile2("magnolia.obj");
 	second_model = loadOBJ(inputfile2);
 
 	//Shifting second model on x-axis a little:

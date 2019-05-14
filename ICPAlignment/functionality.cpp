@@ -16,17 +16,16 @@
 int dim = 3;
 int max_leaf = 10;
 int btn;
-GLfloat zoom = 0.0f;
+GLfloat zoom = 10.0f;
+
+using namespace Eigen;
 
 void Aligner::initialize(Eigen::MatrixXd d, Eigen::MatrixXd m)
 {
 	firstModel_verts = d; secondModel_verts = m;
-	firstModel_verts_copy = d; secondModel_verts_copy = m;
 	N_data = d.rows();
-	N_data_copy = d.rows();
 	model_kd_tree = new kd_tree_t(dim, secondModel_verts, max_leaf);
 	point_correspondence.clear();
-	weights.clear();
 }
 
 bool Aligner::step() 
@@ -36,12 +35,12 @@ bool Aligner::step()
 	if ((iter_counter < max_it) && !(error_diff < threshold)) 
 	{
 
-		// Generate the downsampled truncated 1-nn point correspondence map
+		// Generate the point correspondence map
 		pointSearch();
 
 		// Compute the optimal transformation of the data
-		translation = Eigen::Vector3d::Zero();
-		rotation = Eigen::Matrix3d::Zero();
+		translation = Vector3d::Zero();
+		rotation = Matrix3d::Zero();
 
 		calculateTransformation(translation, rotation);
 
@@ -50,8 +49,6 @@ bool Aligner::step()
 		firstModel_verts = firstModel_verts + translation.transpose().replicate(N_data, 1);
 
 		first_model = convertToVec(firstModel_verts, first_model);
-		//second_model = convertToVec(secondModel_verts);
-
 
 		// Store accumulative transformations
 		final_rotation = rotation * final_rotation;
@@ -62,11 +59,11 @@ bool Aligner::step()
 		error = calculateError(translation, rotation);
 
 		iter_counter++;
-		std::cout << "Iteration: " << iter_counter << ", Error: " << error << std::endl;
+		std::cout << "Iteration: " << iter_counter << ", Mean Squared Error: " << error_diff << std::endl;
 	}
 	else if (error_diff < threshold) 
 	{
-		std::cout << "Alignment complete\n";
+		std::cout << "Alignment complete, final Mean Squared Error: " << error_diff << "\n" ;
 		iteration_has_converged = true;
 		return false;
 	}
@@ -76,31 +73,6 @@ bool Aligner::step()
 	}
 
 	return true;
-}
-
-void Aligner::getMinThreaded(Eigen::MatrixXd &A, Eigen::MatrixXd &B, int startA, int endA, int startB, int endB, 
-	std::map<int, int> &pc, std::vector<GLfloat> &d)
-{
-	
-	for (int i = startA; i < endA; i++)
-	{
-		GLdouble min = DBL_MAX;
-		int minj = B.size() - 1;
-		GLfloat Ax = A(i, 0); GLfloat Ay = A(i, 1); GLfloat Az = A(i, 2);
-		for (int j = startB; j < endB; j++)
-		{
-			GLfloat Bx = B(j, 0); GLfloat By = B(j, 1); GLfloat Bz = B(j, 2);
-			GLfloat dist = ((Ax - Bx) * (Ax - Bx)) + ((Ay - By) * (Ay - By)) + ((Az - Bz) * (Az - Bz));
-			dist = sqrt(dist);
-			if (dist < min)
-			{
-				min = dist;
-				minj = j;
-			}
-		}
-		pc[i] = minj;
-		d[i] = min;
-	}
 }
 
 void Aligner::getMinDistance(Eigen::MatrixXd A, Eigen::MatrixXd B, std::vector<GLfloat> &distances)
@@ -137,15 +109,13 @@ void Aligner::pointSearch()
 	std::vector<size_t> nn_index(num_results);
 	std::vector<GLfloat> nn_distance(num_results);
 	std::vector<GLfloat> distances(N_data);
-	//std::vector<double> distances(N_data_copy);
 	nanoflann::KNNResultSet<GLfloat> result_set(num_results);
 	double mean = 0;
-
-	//getMinDistance(firstModel_verts, secondModel_verts, distances);
 	
 	for (int i = 0; i < firstModel_verts.rows(); i++)
 	{
-		std::vector<double> query_pt = {
+		std::vector<double> query_pt = 
+		{
 			firstModel_verts(i, 0),
 			firstModel_verts(i, 1),
 			firstModel_verts(i, 2)
@@ -154,45 +124,32 @@ void Aligner::pointSearch()
 		model_kd_tree->index->findNeighbors(result_set, &query_pt[0], nanoflann::SearchParams(10));
 		point_correspondence[i] = nn_index[0];
 		distances[i] = nn_distance[0];
+		mean += nn_distance[0];
+	}
+	mean /= N_data;
+
+	// Compute variance and std dev. of the distances
+	double variance = 0;
+	for (int i = 0; i < N_data; i++) 
+		variance += ((distances[i] - mean)*(distances[i] - mean));
+	variance /= N_data;
+
+	double std_deviation = sqrt(variance);
+	double rejected = 0;
+
+	// Reject point-pairs:
+	double cmp;
+	for (int i = 0; i < N_data; i++)
+	{
+		cmp = 1.5*std_deviation;
+		if (std::abs(distances[i] - mean) > cmp) 
+		{
+			point_correspondence.erase(i);
+			rejected++;
+		}
 	}
 
-	//// Compute variance and std dev. of the distances
-	//double variance = 0;
-	//for (int i = 0; i < N_sample; i++) {
-	//	variance += ((distances[sample[i]] - mean)*(distances[sample[i]] - mean));
-	//} variance /= N_sample;
-
-	//double std_deviation = sqrt(variance);
-	//double rejected = 0;
-
-	//// Reject point-pairs based on threshold distance rule
-	//double cmp;
-	//for (int i = 0; i < N_sample; i++) 
-	//{
-	//	cmp = 1.5*std_deviation;
-	//	if (std::abs(distances[sample[i]] - mean) > cmp) 
-	//	{
-	//		point_correspondence.erase(sample[i]);
-	//		//removeRow(firstModel_verts_copy, i);
-	//		rejected++;
-	//	}
-	//}
-
-	////std::cout << "Rejected " << rejected << " sample point-pairs." << std::endl;
-	//std::cout << point_correspondence.size() << std::endl;
-
-	//// Find max distance between points
-	////std::vector<double>::iterator max_dist_it;
-	//std::vector<GLfloat>::iterator max_dist_it;
-	//max_dist_it = std::max_element(distances.begin(), distances.end());
-
-	//// Define weights for registration step
-	//for (std::map<int, int>::iterator it = point_correspondence.begin();
-	//	it != point_correspondence.end(); ++it) {
-
-	//	weights[it->first] = 1 - (distances[it->first] / *max_dist_it);
-
-	//}
+	std::cout << "Rejected " << rejected << " sample point-pairs." << std::endl;
 }
 
 void Aligner::removeRow(Eigen::MatrixXd & matrix, unsigned int rowToRemove)
@@ -209,52 +166,47 @@ void Aligner::removeRow(Eigen::MatrixXd & matrix, unsigned int rowToRemove)
 void Aligner::calculateTransformation(Eigen::Vector3d &translation, Eigen::Matrix3d &rotation)
 {
 	size_t N_data = firstModel_verts.rows();
-	//size_t N_data_copy = firstModel_verts_copy.rows();
 	size_t N_model = secondModel_verts.rows();
 	size_t N_pc = point_correspondence.size();
 
 	// Centres-of-mass
-	Eigen::Vector3d data_COM = firstModel_verts.colwise().sum() / N_data;
-	/*Eigen::Vector3d data_COM = firstModel_verts_copy.colwise().sum() / N_data;*/
-	Eigen::Vector3d model_COM = secondModel_verts.colwise().sum() / N_model;
+	Vector3d data_COM = firstModel_verts.colwise().sum() / N_data;
+	Vector3d model_COM = secondModel_verts.colwise().sum() / N_model;
 
 	// Construct covariance matrix
-	Eigen::Matrix3d covariance_matrix = Eigen::Matrix3d::Zero();
+	Matrix3d covariance_matrix = Matrix3d::Zero();
 	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it) 
 	{
 		int index = it->first;
-		/*covariance_matrix += weights[index] * (firstModel_verts.row(index).transpose() * secondModel_verts.row(it->second));*/
 		covariance_matrix += (firstModel_verts.row(index).transpose() * secondModel_verts.row(it->second));
 
 	} covariance_matrix /= N_pc;
 	covariance_matrix -= (data_COM * model_COM.transpose());
 
 	// Construct Q-matrix
-	Eigen::Matrix3d A = covariance_matrix - covariance_matrix.transpose();
-	Eigen::Vector3d delta;
+	Matrix3d A = covariance_matrix - covariance_matrix.transpose();
+	Vector3d delta;
 	delta << A(1, 2), A(2, 0), A(0, 1);
 
-	Eigen::Matrix4d Q;
+	Matrix4d Q;
 	double Q_trace = covariance_matrix.trace();
 	Q(0, 0) = Q_trace;
 	Q.block(1, 0, 3, 1) = delta;
 	Q.block(0, 1, 1, 3) = delta.transpose();
-	Q.block(1, 1, 3, 3) = covariance_matrix
-		+ covariance_matrix.transpose()
-		- Q_trace * Eigen::MatrixXd::Identity(3, 3);
+	Q.block(1, 1, 3, 3) = covariance_matrix + covariance_matrix.transpose() - Q_trace * MatrixXd::Identity(3, 3);
 
 	// Find optimal unit quaternion
-	Eigen::EigenSolver<Eigen::Matrix4d> eigen_solver(Q);
-	Eigen::MatrixXd::Index max_ev_index;
+	EigenSolver<Matrix4d> eigen_solver(Q);
+	MatrixXd::Index max_ev_index;
 	eigen_solver.eigenvalues().real().cwiseAbs().maxCoeff(&max_ev_index);
-	Eigen::Vector4d q_optimal = eigen_solver.eigenvectors().real().col(max_ev_index);
+	Vector4d q_optimal = eigen_solver.eigenvectors().real().col(max_ev_index);
 
 	// Store the computed solution in 'rotation' and 'translation'
 	calculateQMatrix(q_optimal, rotation);
 	translation = model_COM - rotation * data_COM;
 }
 
-double Aligner::calculateError(Eigen::Vector3d translation, Eigen::Matrix3d rotation) {
+double Aligner::calculateError(Vector3d translation, Matrix3d rotation) {
 
 	size_t N_pc = point_correspondence.size();
 
@@ -262,14 +214,16 @@ double Aligner::calculateError(Eigen::Vector3d translation, Eigen::Matrix3d rota
 	double sum = 0;
 	for (std::map<int, int>::iterator it = point_correspondence.begin(); it != point_correspondence.end(); ++it) 
 	{
-		diff = secondModel_verts.row(it->second).transpose() - (rotation * firstModel_verts.row(it->first).transpose()) - translation;
+		diff = secondModel_verts.row(it->second).transpose() - 
+			(rotation * firstModel_verts.row(it->first).transpose()) - translation;
+
 		sum += diff.norm();
 	} sum /= N_pc;
 
 	return sum;
 }
 
-void Aligner::calculateQMatrix(Eigen::Vector4d q, Eigen::Matrix3d &R) 
+void Aligner::calculateQMatrix(Vector4d q, Matrix3d &R) 
 {
 	//Hard coding values for now:
 	R(0, 0) = q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3];
@@ -372,7 +326,7 @@ std::vector<Vertex> loadOBJ(std::istream& in)
 	return verts;
 }
 
-std::vector<Vertex> convertToVec(Eigen::MatrixXd input, std::vector<Vertex> Verts)
+std::vector<Vertex> convertToVec(MatrixXd input, std::vector<Vertex> Verts)
 {
 	//Initializes and populates the vector:
 	std::vector<Vertex> Vec;
